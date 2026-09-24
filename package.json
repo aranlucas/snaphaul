@@ -13,7 +13,7 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@openrouter/ai-sdk-provider": "^3.0.0",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "ai": "^7.0.87",
     "browser-image-compression": "^2.0.2",
     "next": "16.3.5",
