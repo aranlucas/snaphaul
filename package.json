@@ -13,10 +13,10 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@openrouter/ai-sdk-provider": "^3.0.0",
-    "ai": "^7.0.87",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
+    "ai": "^7.0.116",
     "browser-image-compression": "^2.0.2",
-    "next": "16.3.5",
+    "next": "16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.6.5"
@@ -26,8 +26,8 @@
     "@types/node": "^26",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "oxfmt": "^0.67.0",
-    "oxlint": "^1.80.0",
+    "oxfmt": "^0.70.0",
+    "oxlint": "^1.85.0",
     "tailwindcss": "^4",
     "typescript": "^7.0.2"
   }
