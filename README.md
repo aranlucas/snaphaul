@@ -1,12 +1,19 @@
-# Snaphaul
+# Snaphaul 📸 · Snap a photo. Get a listing that sells.
+
+[![TypeScript checks](https://github.com/aranlucas/snaphaul/actions/workflows/typecheck.yml/badge.svg)](https://github.com/aranlucas/snaphaul/actions/workflows/typecheck.yml)
 
 Snaphaul turns one to five item photos into a marketplace-ready listing for
 eBay, Etsy, Poshmark, or Mercari. It identifies the item, writes a
 marketplace-specific title and description, suggests item specifics and tags,
-and returns a price suggestion with a range. It is aimed at resellers whose
-inventory grows faster than they can write the 47th listing of the day.
+and returns a price suggestion with a range. It is built for the reseller
+whose inventory grows faster than they can write the 47th listing of the day.
 
 ![Snaphaul preview](public/og.png)
+
+> **The quick reseller loop:** drop in a few photos, choose a marketplace, add
+> the flaw or measurement the camera cannot know, and copy the suggested title,
+> details, and price range into your listing. You stay the editor; Snaphaul
+> clears the blank page.
 
 The public beta offers ten anonymous generations per browser session and does
 not require an account. Treat the generated copy, category, condition, and
