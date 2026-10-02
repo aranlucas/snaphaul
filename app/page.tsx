@@ -1,49 +1,174 @@
 import Link from "next/link";
+import Image from "next/image";
+import { Brand, Footer, Icon } from "./components/studio-ui";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-6">
-        <span className="text-2xl font-bold text-indigo-600">Snaphaul</span>
-        <Link href="/app" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
-          Try it free →
-        </Link>
-      </header>
-
-      <section className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-6xl">
-          Snap a photo.<br />
-          <span className="text-indigo-600">Get a listing that sells.</span>
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-          Snaphaul turns your item photos into optimized eBay, Etsy, Poshmark, and Mercari listings —
-          SEO title, full description, item specifics, tags, and a suggested price. In seconds, not 10 minutes per item.
-        </p>
-        <div className="mt-8 flex justify-center gap-4">
-          <Link href="/app" className="rounded-xl bg-indigo-600 px-8 py-3.5 text-lg font-semibold text-white shadow-lg hover:bg-indigo-700">
-            Generate your first listing — free
+    <>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <header className="site-header wrap">
+        <Brand />
+        <nav aria-label="Main">
+          <a className="nav-link" href="#workflow">
+            How it works
+          </a>
+          <Link className="button button-dark" href="/app">
+            Open the studio <Icon name="arrow" />
           </Link>
-        </div>
-        <p className="mt-3 text-sm text-gray-400">10 free listings. No signup required.</p>
-      </section>
-
-      <section className="mx-auto grid max-w-5xl gap-6 px-4 pb-20 sm:grid-cols-3">
-        {[
-          ["📸", "Photo to listing", "Upload 1–5 photos. Snaphaul identifies the item, brand, condition, and flaws."],
-          ["🔍", "Marketplace-optimized", "Titles within character limits, the right keywords, and tags for eBay, Etsy, Poshmark, or Mercari."],
-          ["💰", "Price with confidence", "A suggested price and range based on brand, condition, and resale value."],
-        ].map(([emoji, title, body]) => (
-          <div key={title} className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="text-3xl">{emoji}</div>
-            <h3 className="mt-3 font-semibold text-gray-900">{title}</h3>
-            <p className="mt-1 text-sm text-gray-600">{body}</p>
+        </nav>
+      </header>
+      <main id="main">
+        <section className="landing-intro wrap">
+          <h1>
+            Your next listing
+            <br />
+            starts with <span>a photo.</span>
+          </h1>
+          <div className="intro-aside">
+            <p>
+              The item is already there.
+              <br />
+              Let’s find the words.
+            </p>
+            <p className="muted">
+              Turn 1–5 photos into a draft for eBay, Etsy, Poshmark or Mercari. Review the details,
+              make it yours, and copy it over.
+            </p>
+            <Link className="button button-green" href="/app">
+              Make a listing <Icon name="arrow" />
+            </Link>
+            <p className="fine">Free beta · No account needed</p>
           </div>
-        ))}
-      </section>
-
-      <footer className="border-t bg-white py-6 text-center text-sm text-gray-400">
-        Snaphaul · <Link href="/terms" className="hover:underline">Terms</Link> · <Link href="/privacy" className="hover:underline">Privacy</Link>
-      </footer>
-    </main>
+        </section>
+        <section className="transformation wrap" id="example" aria-labelledby="example-heading">
+          <div className="example-heading">
+            <h2 id="example-heading">One item. A fresh start.</h2>
+            <span className="example-label">Illustrative example</span>
+          </div>
+          <div className="example-spread">
+            <figure className="example-photo">
+              <Image
+                src="/example/denim-jacket.webp"
+                alt="Blue Levi’s denim jacket hanging against a light wall"
+                width="960"
+                height="720"
+                fetchPriority="high"
+                loading="eager"
+                sizes="(min-width: 800px) 50vw, 100vw"
+              />
+              <figcaption>
+                <span>The photo</span>
+                <span>Blue denim · Button front</span>
+              </figcaption>
+            </figure>
+            <div className="example-draft">
+              <div className="draft-top">
+                <span>eBay draft</span>
+                <Icon name="arrow" />
+              </div>
+              <h3>
+                Levi’s Blue Denim
+                <br />
+                Button-Front Jacket
+              </h3>
+              <p>
+                A classic blue denim jacket with a button front, pointed collar and chest pockets.
+              </p>
+              <dl className="example-specs">
+                <div>
+                  <dt>Brand</dt>
+                  <dd>Levi’s</dd>
+                </div>
+                <div>
+                  <dt>Color</dt>
+                  <dd>Blue</dd>
+                </div>
+                <div>
+                  <dt>Still to check</dt>
+                  <dd>Size, condition, measurements</dd>
+                </div>
+              </dl>
+              <div className="example-price">
+                <span>Price guidance</span>
+                <strong>Suggested range</strong>
+                <p>
+                  A real draft includes a USD estimate. Check the item and market before choosing a
+                  price.
+                </p>
+              </div>
+              <p className="fine">
+                Hand-authored to show the format. This example was not generated by a live model.
+              </p>
+            </div>
+          </div>
+          <p className="photo-credit">
+            Photo:{" "}
+            <a href="https://commons.wikimedia.org/wiki/File:Denim_Jacket_(51079649933).jpg">
+              ajay_suresh
+            </a>{" "}
+            · <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a> · Resized and
+            cropped for display.
+          </p>
+        </section>
+        <section className="workflow wrap" id="workflow" aria-labelledby="workflow-heading">
+          <h2 id="workflow-heading">
+            A little less typing.
+            <br />A lot more listing.
+          </h2>
+          <ol>
+            <li>
+              <span>01</span>
+              <div>
+                <h3>Show the whole story.</h3>
+                <p>
+                  Add a front view, the label, and any wear. More useful angles give the draft more
+                  to work with.
+                </p>
+              </div>
+            </li>
+            <li>
+              <span>02</span>
+              <div>
+                <h3>Choose where it’s going.</h3>
+                <p>
+                  Pick your marketplace. Add the measurements or flaws a camera can’t reliably know.
+                </p>
+              </div>
+            </li>
+            <li>
+              <span>03</span>
+              <div>
+                <h3>Keep the final say.</h3>
+                <p>
+                  Edit your title and description. Review suggestions, then copy into your
+                  marketplace. Nothing is published for you.
+                </p>
+              </div>
+            </li>
+          </ol>
+        </section>
+        <section className="landing-close">
+          <div className="wrap close-inner">
+            <h2>
+              Give that pile
+              <br />a head start.
+            </h2>
+            <div>
+              <Link className="button button-mint" href="/app">
+                Start with your photos <Icon name="arrow" />
+              </Link>
+              <p>
+                10 successful generations per browser session.
+                <br />
+                The cookie-based allowance can reset; it isn’t a per-person quota.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
   );
 }
