@@ -16,7 +16,11 @@ whose inventory grows faster than they can write the 47th listing of the day.
 > clears the blank page.
 
 The public beta offers ten anonymous generations per browser session and does
-not require an account. Treat the generated copy, category, condition, and
+not require an account. This cookie-based allowance is advisory: clearing or
+changing cookies resets it, and concurrent requests can share a count. It is not
+an enforceable per-person quota or abuse-protection mechanism. A hard budget
+requires atomic server-owned persistence and an identity/renewal policy.
+Treat the generated copy, category, condition, and
 price as suggestions: the seller remains responsible for accuracy and each
 marketplace's rules.
 
@@ -39,12 +43,12 @@ OPENROUTER_API_KEY=... pnpm dev
 
 Supported settings:
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `OPENROUTER_API_KEY` | yes | Vision model access for listing generation. |
-| `OPENROUTER_MODEL` | no | Override the rotating free-model fallback list. |
-| `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` | no | Enables live eBay Browse API asking-price comps. |
-| `APP_URL` | no | Metadata base URL; defaults to the deployed app URL. |
+| Variable                                | Required | Purpose                                              |
+| --------------------------------------- | -------- | ---------------------------------------------------- |
+| `OPENROUTER_API_KEY`                    | yes      | Vision model access for listing generation.          |
+| `OPENROUTER_MODEL`                      | no       | Override the rotating free-model fallback list.      |
+| `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` | no       | Enables live eBay Browse API asking-price comps.     |
+| `APP_URL`                               | no       | Metadata base URL; defaults to the deployed app URL. |
 
 Without eBay credentials the UI still shows the model's estimate. When enabled,
 comps are asking prices from live listings, not sold-price evidence.
@@ -63,8 +67,14 @@ flowchart LR
 ```
 
 The browser compresses images before sending them as data URLs. The route
-validates the marketplace, details, and one-to-five-image limit with Zod,
-tries the configured model or free fallback models, and sets an HTTP-only
+passes requests through `lib/generate-listing.ts`, which bounds the JSON body to
+8 MiB, validates the marketplace/details and one-to-five-image limit, and checks
+base64 encoding, MIME type, file signature, and a 1 MiB decoded limit per image.
+JPEG, PNG, WebP, and GIF are supported; SVG and other media are rejected. File
+signature checks are not a full pixel decode or malware scan. Invalid requests
+return 400 (or 413 for oversized bodies) before any model call, without echoing
+photo data. The module tries the configured model or free fallback models and
+preserves a valid listing if optional comparisons fail. The route sets an HTTP-only
 anonymous counter cookie. Photos and typed details are sent to OpenRouter for
 generation; the application does not persist them. See the built-in
 [privacy policy](app/privacy/page.tsx) and [terms](app/terms/page.tsx) for the
@@ -75,8 +85,10 @@ beta boundary.
 - `app/page.tsx` — public landing page and product explanation.
 - `app/app/page.tsx` — uploader, marketplace selector, result cards, and copy
   actions.
-- `app/api/generate/route.ts` — request validation, model fallback, free limit,
-  cookies, and response schema.
+- `app/api/generate/route.ts` — OpenRouter adapter, advisory allowance, cookies,
+  and HTTP response mapping.
+- `lib/generate-listing.ts` — bounded request/image validation, model fallback,
+  optional comparisons, and typed generation outcomes.
 - `lib/marketplaces.ts` — marketplace-specific title limits and prompt rules.
 - `lib/ebay.ts` — optional eBay OAuth token cache and asking-price percentile
   calculation.
@@ -89,3 +101,11 @@ fields; it does not publish listings to marketplaces, retain a listing history,
 or provide guaranteed valuations. Free-model availability, image quality,
 marketplace policy changes, and anonymous cookie clearing can all affect the
 result.
+
+## Offline checks
+
+`pnpm test` compiles and runs the Node test suite with synthetic image data and
+local model/comparison adapters. It makes no OpenRouter or eBay requests. CI also
+runs these regressions. Run `pnpm typecheck`, `pnpm lint`, and `pnpm build` for the
+remaining checks. Failed generation or invalid input does not update the cookie
+allowance; only a successfully generated listing is counted.
