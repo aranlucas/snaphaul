@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import imageCompression from "browser-image-compression";
-import { MARKETPLACE_CONFIG, MARKETPLACES, Marketplace } from "@/lib/marketplaces";
+import { MARKETPLACE_CONFIG, MARKETPLACES, type Marketplace } from "@/lib/marketplaces";
+import { Brand, Footer, Icon } from "../components/studio-ui";
 
 type Listing = {
   item_identification: string;
@@ -17,411 +18,727 @@ type Listing = {
   price_reasoning: string;
   photo_notes: string[];
 };
-
-type Comps = {
-  count: number;
-  median: number;
-  p25: number;
-  p75: number;
+type Comps = { count: number; median: number; p25: number; p75: number };
+type Photo = { id: number; src: string; name: string };
+const EMPTY_DETAILS = {
+  brand: "",
+  condition: "",
+  size: "",
+  flaws: "",
+  originalPrice: "",
+  notes: "",
 };
+const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
-const FREE_LIMIT = 10;
-
-const LOADING_STEPS = [
-  "Identifying your item… 🔍",
-  "Studying the details… 👀",
-  "Writing your title… ✍️",
-  "Choosing the right keywords… 🏷️",
-  "Pricing it… 💰",
-];
-
-function fullListingText(l: Listing): string {
-  const specs = l.item_specifics.map((s) => `${s.name}: ${s.value}`).join("\n");
-  return `${l.title}
-
-${l.description}
-
-Item specifics:
-${specs}
-
-Tags: ${l.tags.join(", ")}
-Suggested price: $${l.price_suggested} (range $${l.price_range[0]}–${l.price_range[1]})`;
+function fullListingText(l: Listing) {
+  return `${l.title}\n\n${l.description}\n\nItem specifics:\n${l.item_specifics.map((s) => `${s.name}: ${s.value}`).join("\n")}\n\nCategory: ${l.category}\nTags: ${l.tags.join(", ")}\nSuggested price: $${l.price_suggested} (range $${l.price_range[0]}–${l.price_range[1]})`;
 }
 
 export default function GeneratorPage() {
-  const [images, setImages] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
   const [marketplace, setMarketplace] = useState<Marketplace>("ebay");
-  const [brand, setBrand] = useState("");
-  const [condition, setCondition] = useState("");
-  const [size, setSize] = useState("");
-  const [flaws, setFlaws] = useState("");
-  const [originalPrice, setOriginalPrice] = useState("");
-  const [notes, setNotes] = useState("");
+  const [details, setDetails] = useState(EMPTY_DETAILS);
   const [listing, setListing] = useState<Listing | null>(null);
-  const [listingFor, setListingFor] = useState<Marketplace | null>(null);
+  const [listingFor, setListingFor] = useState<Marketplace>("ebay");
   const [comps, setComps] = useState<Comps | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [copyNotice, setCopyNotice] = useState("");
   const [copied, setCopied] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [revision, setRevision] = useState(0);
+  const [draftRevision, setDraftRevision] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
+  const resultsRef = useRef<HTMLElement>(null);
+  const photosRef = useRef<Photo[]>([]);
+  const uploadEpoch = useRef(0);
+  const uploadBusy = useRef(false);
+  const photoId = useRef(0);
+  const revisionRef = useRef(0);
+  const requestRef = useRef<AbortController | null>(null);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mounted = useRef(true);
+  const copyToken = useRef(0);
 
-  // Rotate status messages during generation so the wait feels alive
   useEffect(() => {
-    if (!loading) return;
-    const t = setInterval(() => setLoadingStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1)), 4000);
-    return () => clearInterval(t);
-  }, [loading]);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      // oxlint-disable-next-line react-hooks/exhaustive-deps -- Invalidate the latest clipboard operation on unmount.
+      copyToken.current++;
+      // oxlint-disable-next-line react-hooks/exhaustive-deps -- Invalidate the latest async upload on unmount.
+      uploadEpoch.current++;
+      requestRef.current?.abort();
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+    };
+  }, []);
 
-  async function compress(file: File): Promise<string> {
-    const out = await imageCompression(file, {
-      maxSizeMB: 0.4,
-      maxWidthOrHeight: 1024,
-      useWebWorker: true,
-      fileType: "image/jpeg",
-    });
-    return imageCompression.getDataUrlFromFile(out);
+  function changed() {
+    revisionRef.current++;
+    setRevision(revisionRef.current);
+  }
+  function updatePhotos(next: Photo[]) {
+    photosRef.current = next;
+    setPhotos(next);
+    changed();
   }
 
   async function addFiles(files: File[]) {
-    const picked = files.filter((f) => f.type.startsWith("image/")).slice(0, 5 - images.length);
-    if (!picked.length) return;
-    const compressed = await Promise.all(picked.map(compress));
-    setImages((prev) => [...prev, ...compressed].slice(0, 5));
+    if (uploadBusy.current || requestRef.current || !files.length) return;
+    const epoch = uploadEpoch.current;
+    uploadBusy.current = true;
+    setUploading(true);
+    setUploadError("");
+    setNotice("");
+    const errors: string[] = [];
+    const added: Photo[] = [];
+    const available = 5 - photosRef.current.length;
+    for (const file of files) {
+      if (!ACCEPTED.includes(file.type)) {
+        errors.push(`${file.name}: use JPEG, PNG, WebP or GIF.`);
+        continue;
+      }
+      if (file.size > MAX_FILE_BYTES) {
+        errors.push(`${file.name}: exceeds 20 MB. Choose a smaller image.`);
+        continue;
+      }
+      if (added.length >= available) {
+        errors.push("You can add up to 5 photos. Remove one to make room.");
+        break;
+      }
+      try {
+        const out = await imageCompression(file, {
+          maxSizeMB: 0.4,
+          maxWidthOrHeight: 1024,
+          useWebWorker: false,
+          fileType: "image/jpeg",
+        });
+        if (out.size > 1024 * 1024) throw new Error("Image could not be reduced");
+        const src = await imageCompression.getDataUrlFromFile(out);
+        added.push({ id: ++photoId.current, src, name: file.name });
+      } catch {
+        errors.push(`${file.name}: couldn’t read this photo. Try another image.`);
+      }
+      if (epoch !== uploadEpoch.current || !mounted.current) return;
+    }
+    if (epoch !== uploadEpoch.current || !mounted.current) return;
+    if (added.length) updatePhotos([...photosRef.current, ...added]);
+    setUploadError(errors.join(" "));
+    setUploading(false);
+    uploadBusy.current = false;
   }
 
-  // Paste-to-upload: resellers screenshot items constantly
   useEffect(() => {
-    const onPaste = (e: ClipboardEvent) => {
-      const files = Array.from(e.clipboardData?.items ?? [])
+    const onPaste = (event: ClipboardEvent) => {
+      const files = Array.from(event.clipboardData?.items ?? [])
         .filter((i) => i.kind === "file")
         .map((i) => i.getAsFile())
         .filter((f): f is File => f !== null);
-      if (files.length) addFiles(files);
+      if (files.length) {
+        event.preventDefault();
+        void addFiles(files);
+      }
     };
     document.addEventListener("paste", onPaste);
     return () => document.removeEventListener("paste", onPaste);
   });
 
-  async function generate(targetMarketplace?: Marketplace) {
-    const mp = targetMarketplace ?? marketplace;
-    if (targetMarketplace) setMarketplace(targetMarketplace);
-    if (!images.length || loading) return;
-    setLoading(true);
-    setLoadingStep(0);
+  function cancel() {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setLoading(false);
+    setNotice("Stopped waiting. A request already sent may still finish and use a generation.");
+  }
+
+  function reset() {
+    copyToken.current++;
+    requestRef.current?.abort();
+    requestRef.current = null;
+    uploadEpoch.current++;
+    uploadBusy.current = false;
+    setUploading(false);
+    setLoading(false);
+    updatePhotos([]);
+    setDetails(EMPTY_DETAILS);
+    setMarketplace("ebay");
+    setListing(null);
+    setComps(null);
     setError("");
+    setUploadError("");
+    setCopyNotice("");
+    setCopied("");
+    setDragActive(false);
+    setNotice("Studio cleared. Ready for your next item.");
+    fileRef.current?.focus();
+  }
+
+  async function generate(target?: Marketplace) {
+    if (!photosRef.current.length || requestRef.current || uploadBusy.current || remaining === 0)
+      return;
+    const mp = target ?? marketplace;
+    if (target && target !== marketplace) {
+      setMarketplace(target);
+      changed();
+    }
+    const sourceRevision = revisionRef.current;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    copyToken.current++;
+    setLoading(true);
+    setError("");
+    setNotice("");
+    setCopyNotice("");
+    setCopied("");
+    const timeout = setTimeout(() => controller.abort(), 90000);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           marketplace: mp,
-          images,
-          brand: brand || undefined,
-          condition: condition || undefined,
-          size: size || undefined,
-          flaws: flaws || undefined,
-          originalPrice: originalPrice || undefined,
-          notes: notes || undefined,
+          images: photosRef.current.map((p) => p.src),
+          ...Object.fromEntries(Object.entries(details).filter(([, value]) => value.trim())),
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generation failed");
+      if (requestRef.current !== controller || !mounted.current) return;
+      if (!res.ok) {
+        if (res.status === 429) setRemaining(0);
+        throw new Error(data.error || "Couldn’t generate a draft. Try again.");
+      }
+      if (
+        !data.listing ||
+        typeof data.listing.title !== "string" ||
+        !Array.isArray(data.listing.item_specifics)
+      )
+        throw new Error("The response was incomplete. Try again.");
       setListing(data.listing);
       setListingFor(mp);
+      setDraftRevision(sourceRevision);
       setComps(data.comps ?? null);
-      setRemaining(data.remaining);
-      // On mobile/tablet the results render below the fold — bring them into view
-      if (window.matchMedia("(max-width: 1023px)").matches && resultsRef.current) {
-        resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      if (typeof data.remaining === "number") setRemaining(data.remaining);
+      requestAnimationFrame(() => {
+        if (!mounted.current || requestRef.current !== null) return;
+        resultsRef.current?.focus({ preventScroll: true });
+        if (window.matchMedia("(max-width: 1023px)").matches)
+          resultsRef.current?.scrollIntoView({
+            behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              ? "auto"
+              : "smooth",
+            block: "start",
+          });
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      if (requestRef.current !== controller || !mounted.current) return;
+      setError(
+        controller.signal.aborted
+          ? "This request took too long. You can try again; the earlier request may still finish."
+          : e instanceof Error
+            ? e.message
+            : "Couldn’t reach the service. Check your connection and try again.",
+      );
     } finally {
-      setLoading(false);
+      clearTimeout(timeout);
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        if (mounted.current) setLoading(false);
+      }
     }
   }
 
   async function copy(label: string, text: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(label);
-    setTimeout(() => setCopied(""), 1500);
+    const token = ++copyToken.current;
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    setCopied("");
+    setCopyNotice("");
+    try {
+      await navigator.clipboard.writeText(text);
+      if (!mounted.current || token !== copyToken.current) return;
+      setCopied(label);
+      setCopyNotice(`${label} copied.`);
+      copyTimer.current = setTimeout(() => {
+        if (mounted.current) setCopied("");
+      }, 2200);
+    } catch {
+      if (mounted.current && token === copyToken.current)
+        setCopyNotice("Clipboard access was denied. Select the draft text and copy it manually.");
+    }
   }
 
-  const inputCls =
-    "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none";
-
-  const otherMarketplaces = MARKETPLACES.filter((m) => m !== (listingFor ?? marketplace));
-  const titleLimit = MARKETPLACE_CONFIG[listingFor ?? marketplace].titleLimit;
+  const titleLimit = MARKETPLACE_CONFIG[listingFor].titleLimit;
+  const busy = loading || uploading;
+  const stale = listing && revision !== draftRevision;
+  function copyButton(label: string, text: string) {
+    return (
+      <button
+        type="button"
+        className="button button-small button-outline"
+        disabled={loading}
+        onClick={() => void copy(label, text)}
+      >
+        <Icon name={copied === label ? "check" : "copy"} />
+        {copied === label ? "Copied" : `Copy ${label.toLowerCase()}`}
+      </button>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 border-b bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-xl font-bold text-indigo-600">
-            Snaphaul
+    <>
+      <a className="skip-link" href="#main">
+        Skip to studio
+      </a>
+      <header className="site-header wrap">
+        <Brand />
+        <nav aria-label="Main">
+          <Link className="nav-link" href="/#workflow">
+            How it works
           </Link>
-          <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
-            {remaining === null ? `${FREE_LIMIT} free listings · no signup` : `${remaining} of ${FREE_LIMIT} free left`}
+          <span className="allowance">
+            {remaining === null
+              ? "10 free generations / session"
+              : `${remaining} of 10 generations left`}
           </span>
-        </div>
+        </nav>
       </header>
-
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-2">
-        {/* Input */}
-        <section className="space-y-4">
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label="Upload item photos"
-            onClick={() => fileRef.current?.click()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileRef.current?.click();
-              }
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragActive(true);
-            }}
-            onDragLeave={() => setDragActive(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragActive(false);
-              addFiles(Array.from(e.dataTransfer.files));
-            }}
-            className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
-              dragActive ? "border-indigo-500 bg-indigo-50" : "border-gray-300 bg-white hover:border-indigo-400"
-            }`}
-          >
-            <p className="font-medium text-gray-700">📸 Drop photos here, click to upload, or paste (⌘V)</p>
-            <p className="mt-1 text-sm text-gray-400">1–5 photos. More photos = better listing.</p>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                addFiles(Array.from(e.target.files ?? []));
-                e.target.value = "";
-              }}
-            />
-          </div>
-          <p className="text-center text-xs text-gray-400">
-            🔒 Photos are only used to generate your listing — never stored or shared.
-          </p>
-
-          {images.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {images.map((img, i) => (
-                <div key={i} className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt={`upload ${i + 1}`} className="h-20 w-20 rounded-lg object-cover" />
-                  <button
-                    onClick={() => setImages(images.filter((_, j) => j !== i))}
-                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-xs text-white"
-                    aria-label={`Remove photo ${i + 1}`}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
+      <main id="main" className="studio wrap">
+        <div className="studio-intro">
           <div>
-            <p className="mb-2 text-sm font-medium text-gray-700">Marketplace</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label="Marketplace">
-              {MARKETPLACES.map((m) => (
-                <button
-                  key={m}
-                  role="radio"
-                  aria-checked={marketplace === m}
-                  onClick={() => setMarketplace(m)}
-                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                    marketplace === m
-                      ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                      : "border-gray-300 bg-white text-gray-600 hover:border-gray-400"
-                  }`}
-                >
-                  {MARKETPLACE_CONFIG[m].name}
-                </button>
-              ))}
-            </div>
+            <h1>Your listing studio.</h1>
+            <p>Start with the item. Leave with a draft you can make your own.</p>
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <input className={inputCls} placeholder="Brand (optional)" value={brand} onChange={(e) => setBrand(e.target.value)} />
-            <input className={inputCls} placeholder="Condition (optional)" value={condition} onChange={(e) => setCondition(e.target.value)} />
-            <input className={inputCls} placeholder="Size / measurements" value={size} onChange={(e) => setSize(e.target.value)} />
-            <input className={inputCls} placeholder="Original price" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} />
-            <input className={`${inputCls} col-span-2`} placeholder="Flaws or wear (optional)" value={flaws} onChange={(e) => setFlaws(e.target.value)} />
-            <input className={`${inputCls} col-span-2`} placeholder="Anything else the AI should know" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-
           <button
-            onClick={() => generate()}
-            disabled={!images.length || loading}
-            className="w-full rounded-lg bg-indigo-600 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+            type="button"
+            className="button button-outline"
+            onClick={reset}
+            disabled={!photos.length && !listing && !busy && !Object.values(details).some(Boolean)}
           >
-            {loading
-              ? LOADING_STEPS[loadingStep]
-              : images.length
-                ? "Generate listing ✨"
-                : `Add ${images.length === 0 ? "photos" : "more photos"} to generate`}
+            <Icon name="refresh" />
+            New item
           </button>
-          {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}{" "}
-              {remaining === 0 ? (
-                <span>Unlimited access is coming soon.</span>
-              ) : (
-                <button onClick={() => generate()} className="font-semibold underline">
-                  Try again
+        </div>
+        <div className="studio-grid">
+          <form
+            className="source-panel"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void generate();
+            }}
+          >
+            <fieldset disabled={busy} className="photo-fieldset">
+              <legend className="section-heading">
+                <span>Your photos</span>
+                <span className="count">{photos.length} / 5</span>
+              </legend>
+              <div
+                className={`contact-sheet ${dragActive ? "is-dragging" : ""}`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (!busy) setDragActive(true);
+                }}
+                onDragLeave={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                    setDragActive(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragActive(false);
+                  void addFiles(Array.from(e.dataTransfer.files));
+                }}
+              >
+                {photos.length ? (
+                  <div className="photo-grid">
+                    {photos.map((photo, i) => (
+                      <figure className="photo-frame" key={photo.id}>
+                        {/* Data URLs are already compressed locally; an image optimizer cannot fetch them. */}
+                        {/* oxlint-disable-next-line next/no-img-element */}
+                        <img src={photo.src} alt={`View ${i + 1}: ${photo.name}`} />
+                        <figcaption>
+                          <span>{String(i + 1).padStart(2, "0")}</span>
+                          <span>{i === 0 ? "Main view" : "Detail view"}</span>
+                        </figcaption>
+                        <button
+                          className="photo-remove"
+                          type="button"
+                          aria-label={`Remove photo ${i + 1}`}
+                          onClick={() =>
+                            updatePhotos(photosRef.current.filter((p) => p.id !== photo.id))
+                          }
+                        >
+                          <Icon name="close" />
+                        </button>
+                      </figure>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="upload-empty">
+                    <Icon name="camera" />
+                    <h2>
+                      Let the photos
+                      <br />
+                      do the talking.
+                    </h2>
+                    <p>
+                      Drop your item photos here,
+                      <br />
+                      or choose them below.
+                    </p>
+                  </div>
+                )}
+                <label
+                  className={`upload-button button ${busy || photos.length === 5 ? "is-disabled" : ""}`}
+                >
+                  <Icon name="plus" />
+                  {uploading
+                    ? "Preparing photos…"
+                    : photos.length
+                      ? "Add another view"
+                      : "Choose photos"}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept={ACCEPTED.join(",")}
+                    multiple
+                    disabled={busy || photos.length === 5}
+                    onChange={(e) => {
+                      void addFiles(Array.from(e.target.files ?? []));
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <p className="upload-hint">
+                  JPEG, PNG, WebP or GIF · Up to 20 MB each
+                  <br />
+                  You can also paste images from your clipboard.
+                </p>
+              </div>
+            </fieldset>
+            <output className="upload-feedback">
+              {uploading
+                ? "Preparing your photos. You can clear the studio to stop."
+                : `${photos.length} photo${photos.length === 1 ? "" : "s"} added.`}
+            </output>
+            {uploadError && (
+              <p className="feedback feedback-error" role="alert">
+                {uploadError}
+              </p>
+            )}
+            <fieldset className="marketplace-fieldset" disabled={busy}>
+              <legend className="section-heading">Choose your marketplace</legend>
+              <div className="marketplace-grid">
+                {MARKETPLACES.map((mp) => (
+                  <label
+                    className={`marketplace-option ${marketplace === mp ? "is-selected" : ""}`}
+                    key={mp}
+                  >
+                    <input
+                      type="radio"
+                      name="marketplace"
+                      value={mp}
+                      checked={marketplace === mp}
+                      onChange={() => {
+                        setMarketplace(mp);
+                        changed();
+                      }}
+                    />
+                    <span>{MARKETPLACE_CONFIG[mp].name}</span>
+                    <span className="radio-mark" aria-hidden="true" />
+                  </label>
+                ))}
+              </div>
+              <p className="fine marketplace-guidance">
+                {marketplace === "etsy"
+                  ? "Check Etsy eligibility: vintage, handmade or craft supplies."
+                  : `A title tailored to ${MARKETPLACE_CONFIG[marketplace].name}’s ${MARKETPLACE_CONFIG[marketplace].titleLimit}-character limit.`}
+              </p>
+            </fieldset>
+            <details className="seller-details">
+              <summary>
+                <span>Fill in what photos can’t tell</span>
+                <span className="fine">Optional</span>
+              </summary>
+              <p className="fine">Your details take priority over photo interpretation.</p>
+              <fieldset disabled={busy} className="detail-grid">
+                {(
+                  [
+                    ["brand", "Brand", "e.g. Levi’s", 200],
+                    ["condition", "Condition", "e.g. Gently used", 200],
+                    ["size", "Size / measurements", "e.g. M, 22 in pit to pit", 200],
+                    ["originalPrice", "Original price", "e.g. $90 USD", 50],
+                    ["flaws", "Flaws or wear", "Be specific about marks or damage", 500],
+                    ["notes", "Anything else", "Material, age, what’s included…", 1000],
+                  ] as const
+                ).map(([key, label, placeholder, max]) => (
+                  <label
+                    className={key === "flaws" || key === "notes" ? "field field-wide" : "field"}
+                    key={key}
+                  >
+                    <span>{label}</span>
+                    <input
+                      placeholder={placeholder}
+                      maxLength={max}
+                      value={details[key]}
+                      onChange={(e) => {
+                        setDetails((prev) => ({ ...prev, [key]: e.target.value }));
+                        changed();
+                      }}
+                    />
+                  </label>
+                ))}
+              </fieldset>
+            </details>
+            <div className="generate-actions">
+              <button
+                type="submit"
+                className="button button-green generate-button"
+                disabled={!photos.length || busy || remaining === 0}
+              >
+                {loading
+                  ? "Generating your draft…"
+                  : uploading
+                    ? "Preparing photos…"
+                    : listing
+                      ? "Generate a new draft"
+                      : "Generate my listing"}
+                <Icon name="arrow" />
+              </button>
+              {loading && (
+                <button type="button" className="button button-outline" onClick={cancel}>
+                  Cancel
                 </button>
               )}
-            </p>
-          )}
-        </section>
-
-        {/* Output */}
-        <section className="space-y-4" ref={resultsRef}>
-          {!listing && !loading && (
-            <div className="flex h-full min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 text-center text-gray-400">
-              <p className="text-4xl">📦</p>
-              <p className="font-medium text-gray-500">Your optimized listing will appear here</p>
-              <p className="text-sm">1. Add photos → 2. Pick a marketplace → 3. Copy your listing</p>
             </div>
-          )}
-          {loading && (
-            <div className="flex h-full min-h-64 flex-col items-center justify-center gap-3 rounded-xl border border-indigo-100 bg-white px-6 text-center">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
-              <p className="font-medium text-gray-700">{LOADING_STEPS[loadingStep]}</p>
-              <p className="text-xs text-gray-400">Takes about 15 seconds — worth it.</p>
-            </div>
-          )}
-          {listing && !loading && (
-            <>
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-white">
-                <p className="font-semibold">
-                  ✨ {MARKETPLACE_CONFIG[listingFor ?? marketplace].name} listing ready
-                </p>
-                <button
-                  onClick={() => copy("full", fullListingText(listing))}
-                  className="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium transition hover:bg-white/25"
-                >
-                  {copied === "full" ? "✓ Copied everything" : "Copy full listing"}
-                </button>
+            {!photos.length && <p className="fine">Add at least one photo to get started.</p>}
+            {listing && (
+              <p className="fine">
+                A new draft replaces your edits. Copy anything you want to keep first.
+              </p>
+            )}
+            {error && (
+              <div className="feedback feedback-error" role="alert">
+                <p>{error}</p>
+                {remaining !== 0 && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    disabled={busy}
+                    onClick={() => void generate()}
+                  >
+                    Try again
+                  </button>
+                )}
               </div>
-
-              <Card title="Title" onCopy={() => copy("title", listing.title)} copied={copied === "title"}>
-                <p className="font-semibold text-gray-900">{listing.title}</p>
-                <p className={`mt-1 text-xs ${listing.title.length <= titleLimit ? "text-green-600" : "text-red-500"}`}>
-                  {listing.title.length}/{titleLimit} characters — fits {MARKETPLACE_CONFIG[listingFor ?? marketplace].name}&apos;s limit
-                </p>
-              </Card>
-              <Card title="Description" onCopy={() => copy("desc", listing.description)} copied={copied === "desc"}>
-                <p className="whitespace-pre-wrap text-sm text-gray-700">{listing.description}</p>
-              </Card>
-              <Card title="Item specifics" onCopy={() => copy("specs", listing.item_specifics.map((s) => `${s.name}: ${s.value}`).join("\n"))} copied={copied === "specs"}>
-                <dl className="grid grid-cols-2 gap-2 text-sm">
-                  {listing.item_specifics.map((s, i) => (
-                    <div key={i}>
-                      <dt className="text-gray-400">{s.name}</dt>
-                      <dd className="text-gray-800">{s.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </Card>
-              <Card title="Tags / keywords" onCopy={() => copy("tags", listing.tags.join(", "))} copied={copied === "tags"}>
-                <div className="flex flex-wrap gap-1.5">
-                  {listing.tags.map((t, i) => (
-                    <span key={i} className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-                      {t}
-                    </span>
-                  ))}
+            )}
+            {notice && <output className="feedback">{notice}</output>}
+            <p className="privacy-note">
+              Photos and details go to OpenRouter to generate your draft. Snaphaul doesn’t save
+              them. <Link href="/privacy">Privacy</Link>
+            </p>
+            <p className="fine quota-note">
+              The free allowance is based on browser cookies, can reset, and isn’t a per-person
+              quota. Another draft uses another generation.
+            </p>
+          </form>
+          <section
+            className="draft-panel"
+            ref={resultsRef}
+            tabIndex={-1}
+            aria-label="Listing draft"
+            aria-busy={loading}
+          >
+            {loading && (
+              // This live status includes headings, so it uses a flow-content container.
+              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+              <div className="generation-status" role="status">
+                <span className="waiting-mark" aria-hidden="true" />
+                <div>
+                  <h2>Making room for the words.</h2>
+                  <p>
+                    Generating a {MARKETPLACE_CONFIG[marketplace].name} draft from your photos. Wait
+                    times vary.
+                  </p>
+                  <p className="fine">You can cancel waiting without clearing your item.</p>
                 </div>
-              </Card>
-              <Card title="Suggested price" onCopy={() => copy("price", `$${listing.price_suggested}`)} copied={copied === "price"}>
-                <p className="text-2xl font-bold text-green-600">
-                  ${listing.price_suggested}
-                  <span className="ml-2 text-sm font-normal text-gray-400">range ${listing.price_range[0]}–${listing.price_range[1]}</span>
+              </div>
+            )}
+            {!listing && !loading && (
+              <div className="draft-empty">
+                <h2>
+                  A good draft starts
+                  <br />
+                  with a good view.
+                </h2>
+                <ul>
+                  <li>
+                    <span>Front & back</span>
+                    <p>Show the whole item in clear light.</p>
+                  </li>
+                  <li>
+                    <span>The small print</span>
+                    <p>Include a readable brand or size label.</p>
+                  </li>
+                  <li>
+                    <span>The honest details</span>
+                    <p>Get close to flaws, texture and wear.</p>
+                  </li>
+                </ul>
+                <p>Your title, description, specifics and price guidance will appear here.</p>
+                <Link className="text-link" href="/#example">
+                  See a sample transformation <Icon name="arrow" />
+                </Link>
+              </div>
+            )}
+            {listing && (
+              <div className="listing-editor">
+                <div className="editor-heading">
+                  <div>
+                    <h2>{MARKETPLACE_CONFIG[listingFor].name} draft</h2>
+                    <p>Ready for your final say.</p>
+                  </div>
+                  {copyButton("Full listing", fullListingText(listing))}
+                </div>
+                <p className="review-note">
+                  Review every claim before publishing. This draft stays in this page only.
                 </p>
-                <p className="mt-1 text-sm text-gray-600">{listing.price_reasoning}</p>
-                {comps && (
-                  <p className="mt-2 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">
-                    📊 Live eBay data: {comps.count} similar listings asking a median of ${comps.median}
-                    <span className="text-green-600"> (${comps.p25}–${comps.p75})</span>
+                {stale && (
+                  <p className="feedback">
+                    Your source changed. This draft uses the earlier photos and details; generate
+                    again to update it.
                   </p>
                 )}
-              </Card>
-              <Card title="What the AI saw">
-                <p className="mb-2 text-sm text-gray-600">{listing.item_identification}</p>
-                <ul className="list-inside list-disc text-sm text-gray-600">
-                  {listing.photo_notes.map((n, i) => (
-                    <li key={i}>{n}</li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-sm text-gray-600">📂 Category: {listing.category}</p>
-              </Card>
-
-              <div className="rounded-xl border border-gray-200 bg-white p-4">
-                <p className="mb-2 text-sm font-medium text-gray-700">Also list this on</p>
-                <div className="flex flex-wrap gap-2">
-                  {otherMarketplaces.map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => generate(m)}
-                      disabled={loading}
-                      className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 transition hover:border-indigo-400 disabled:opacity-40"
-                    >
-                      {MARKETPLACE_CONFIG[m].name}
-                    </button>
-                  ))}
+                <output className="copy-feedback" aria-live="polite">
+                  {copyNotice}
+                </output>
+                <div className="editor-section">
+                  <div className="editor-label">
+                    <label htmlFor="listing-title">
+                      Title <span>Editable</span>
+                    </label>
+                    {copyButton("Title", listing.title)}
+                  </div>
+                  <textarea
+                    id="listing-title"
+                    className="title-input"
+                    rows={2}
+                    value={listing.title}
+                    disabled={loading}
+                    onChange={(e) => setListing({ ...listing, title: e.target.value })}
+                  />
+                  <p className={`fine ${listing.title.length > titleLimit ? "limit-warning" : ""}`}>
+                    {listing.title.length} / {titleLimit} characters ·{" "}
+                    {listing.title.length > titleLimit
+                      ? "Over the marketplace limit — shorten before publishing."
+                      : "Within the marketplace limit."}
+                  </p>
                 </div>
-                <button
-                  onClick={() => generate()}
-                  disabled={loading}
-                  className="mt-3 w-full rounded-lg border border-gray-300 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-40"
-                >
-                  ↻ Regenerate this listing
-                </button>
+                <div className="editor-section">
+                  <div className="editor-label">
+                    <label htmlFor="listing-description">
+                      Description <span>Editable</span>
+                    </label>
+                    {copyButton("Description", listing.description)}
+                  </div>
+                  <textarea
+                    id="listing-description"
+                    className="description-input"
+                    rows={8}
+                    value={listing.description}
+                    disabled={loading}
+                    onChange={(e) => setListing({ ...listing, description: e.target.value })}
+                  />
+                </div>
+                <div className="editor-section">
+                  <div className="editor-label">
+                    <h3>Item specifics</h3>
+                    {copyButton(
+                      "Specifics",
+                      listing.item_specifics.map((s) => `${s.name}: ${s.value}`).join("\n"),
+                    )}
+                  </div>
+                  <dl className="specifics">
+                    {listing.item_specifics.map((s, i) => (
+                      <div key={i}>
+                        <dt>{s.name}</dt>
+                        <dd>{s.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="category">
+                    <span>Suggested category</span>
+                    {listing.category}
+                  </p>
+                </div>
+                <div className="editor-section">
+                  <div className="editor-label">
+                    <h3>Tags & keywords</h3>
+                    {copyButton("Tags", listing.tags.join(", "))}
+                  </div>
+                  <ul className="tag-list">
+                    {listing.tags.map((t, i) => (
+                      <li key={i}>{t}</li>
+                    ))}
+                  </ul>
+                </div>
+                <aside className="price-guidance">
+                  <div className="editor-label">
+                    <h3>Suggested price · USD</h3>
+                    {copyButton("Price", `$${listing.price_suggested}`)}
+                  </div>
+                  <div className="price-line">
+                    <strong>${listing.price_suggested}</strong>
+                    <span>
+                      Range ${listing.price_range[0]}–${listing.price_range[1]}
+                    </span>
+                  </div>
+                  <p>{listing.price_reasoning}</p>
+                  {comps && (
+                    <p className="comps-note">
+                      {comps.count} live eBay listings ask a median of ${comps.median} (${comps.p25}
+                      –${comps.p75}). Asking prices aren’t sold prices.
+                    </p>
+                  )}
+                  <p className="fine">
+                    A suggestion, not a valuation. Check comparable items before setting your price.
+                  </p>
+                </aside>
+                <details className="observations">
+                  <summary>What the AI noticed</summary>
+                  <p>{listing.item_identification}</p>
+                  <ul>
+                    {listing.photo_notes.map((n, i) => (
+                      <li key={i}>{n}</li>
+                    ))}
+                  </ul>
+                </details>
+                <div className="rework">
+                  <h3>Try another marketplace</h3>
+                  <p>Creates a new draft and replaces this one. Copy your edits first.</p>
+                  <div>
+                    {MARKETPLACES.filter((mp) => mp !== listingFor).map((mp) => (
+                      <button
+                        type="button"
+                        className="button button-outline"
+                        key={mp}
+                        disabled={busy || remaining === 0 || !photos.length}
+                        onClick={() => void generate(mp)}
+                      >
+                        {MARKETPLACE_CONFIG[mp].name}
+                        <Icon name="arrow" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </>
-          )}
-        </section>
-      </div>
-    </main>
-  );
-}
-
-function Card({
-  title,
-  children,
-  onCopy,
-  copied,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onCopy?: () => void;
-  copied?: boolean;
-}) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-400">{title}</h3>
-        {onCopy && (
-          <button onClick={onCopy} className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200">
-            {copied ? "✓ Copied" : "Copy"}
-          </button>
-        )}
-      </div>
-      {children}
-    </div>
+            )}
+          </section>
+        </div>
+      </main>
+      <Footer />
+    </>
   );
 }

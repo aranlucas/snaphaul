@@ -16,32 +16,36 @@ const APP_URL = process.env.APP_URL || "https://snaphaul-ten.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
-  title: "Snaphaul — Snap a photo, get a listing that sells",
+  title: "Snaphaul — Photos in, listing drafts out",
   description:
-    "Turn item photos into optimized eBay, Etsy, Poshmark, and Mercari listings — title, description, tags, and price suggestions in seconds. Free, no signup.",
+    "Turn item photos into editable eBay, Etsy, Poshmark, and Mercari listing drafts with titles, descriptions, tags and price suggestions. Free beta, no account needed.",
   openGraph: {
-    title: "Snaphaul — Snap a photo, get a listing that sells",
+    title: "Snaphaul — Photos in, listing drafts out",
     description:
-      "Turn item photos into optimized eBay, Etsy, Poshmark, and Mercari listings in seconds. Free, no signup.",
+      "Turn item photos into editable marketplace listing drafts. Review, edit and copy. Free beta, no account needed.",
     url: APP_URL,
     siteName: "Snaphaul",
     type: "website",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Snaphaul — snap a photo, get a listing that sells" }],
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Snaphaul — snap a photo, get a listing that sells",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Snaphaul — Snap a photo, get a listing that sells",
+    title: "Snaphaul — Photos in, listing drafts out",
     description:
-      "Turn item photos into optimized eBay, Etsy, Poshmark, and Mercari listings in seconds. Free, no signup.",
+      "Turn item photos into editable marketplace listing drafts. Review, edit and copy. Free beta, no account needed.",
   },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

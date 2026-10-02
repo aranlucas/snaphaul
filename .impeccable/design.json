@@ -1,0 +1,445 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-02T07:42:23.756Z",
+  "title": "Design System: Snaphaul",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "tonalRamp": [
+          "oklch(15% 0.0108 95.2)",
+          "oklch(25% 0.0108 95.2)",
+          "oklch(36% 0.0108 95.2)",
+          "oklch(48% 0.0108 95.2)",
+          "oklch(60% 0.0108 95.2)",
+          "oklch(72% 0.0108 95.2)",
+          "oklch(84% 0.0108 95.2)",
+          "oklch(95% 0.0108 95.2)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Light Cream",
+        "tonalRamp": [
+          "oklch(15% 0.0067 97.3)",
+          "oklch(25% 0.0067 97.3)",
+          "oklch(36% 0.0067 97.3)",
+          "oklch(48% 0.0067 97.3)",
+          "oklch(60% 0.0067 97.3)",
+          "oklch(72% 0.0067 97.3)",
+          "oklch(84% 0.0067 97.3)",
+          "oklch(95% 0.0067 97.3)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Green-Black Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0339 166.9)",
+          "oklch(25% 0.0339 166.9)",
+          "oklch(36% 0.0339 166.9)",
+          "oklch(48% 0.0339 166.9)",
+          "oklch(60% 0.0339 166.9)",
+          "oklch(72% 0.0339 166.9)",
+          "oklch(84% 0.0339 166.9)",
+          "oklch(95% 0.0339 166.9)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Sage Text",
+        "tonalRamp": [
+          "oklch(15% 0.0289 159.7)",
+          "oklch(25% 0.0289 159.7)",
+          "oklch(36% 0.0289 159.7)",
+          "oklch(48% 0.0289 159.7)",
+          "oklch(60% 0.0289 159.7)",
+          "oklch(72% 0.0289 159.7)",
+          "oklch(84% 0.0289 159.7)",
+          "oklch(95% 0.0289 159.7)"
+        ]
+      },
+      "green": {
+        "role": "primary",
+        "displayName": "Evergreen",
+        "tonalRamp": [
+          "oklch(15% 0.0593 163.1)",
+          "oklch(25% 0.0593 163.1)",
+          "oklch(36% 0.0593 163.1)",
+          "oklch(48% 0.0593 163.1)",
+          "oklch(60% 0.0593 163.1)",
+          "oklch(72% 0.0593 163.1)",
+          "oklch(84% 0.0593 163.1)",
+          "oklch(95% 0.0593 163.1)"
+        ]
+      },
+      "green-hover": {
+        "role": "primary",
+        "displayName": "Deep Evergreen",
+        "tonalRamp": [
+          "oklch(15% 0.0518 157.9)",
+          "oklch(25% 0.0518 157.9)",
+          "oklch(36% 0.0518 157.9)",
+          "oklch(48% 0.0518 157.9)",
+          "oklch(60% 0.0518 157.9)",
+          "oklch(72% 0.0518 157.9)",
+          "oklch(84% 0.0518 157.9)",
+          "oklch(95% 0.0518 157.9)"
+        ]
+      },
+      "mint": {
+        "role": "primary",
+        "displayName": "Working Mint",
+        "tonalRamp": [
+          "oklch(15% 0.0779 126.7)",
+          "oklch(25% 0.0779 126.7)",
+          "oklch(36% 0.0779 126.7)",
+          "oklch(48% 0.0779 126.7)",
+          "oklch(60% 0.0779 126.7)",
+          "oklch(72% 0.0779 126.7)",
+          "oklch(84% 0.0779 126.7)",
+          "oklch(95% 0.0779 126.7)"
+        ]
+      },
+      "soft": {
+        "role": "neutral",
+        "displayName": "Soft Sage",
+        "tonalRamp": [
+          "oklch(15% 0.0150 119.1)",
+          "oklch(25% 0.0150 119.1)",
+          "oklch(36% 0.0150 119.1)",
+          "oklch(48% 0.0150 119.1)",
+          "oklch(60% 0.0150 119.1)",
+          "oklch(72% 0.0150 119.1)",
+          "oklch(84% 0.0150 119.1)",
+          "oklch(95% 0.0150 119.1)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Sage Line",
+        "tonalRamp": [
+          "oklch(15% 0.0241 131.2)",
+          "oklch(25% 0.0241 131.2)",
+          "oklch(36% 0.0241 131.2)",
+          "oklch(48% 0.0241 131.2)",
+          "oklch(60% 0.0241 131.2)",
+          "oklch(72% 0.0241 131.2)",
+          "oklch(84% 0.0241 131.2)",
+          "oklch(95% 0.0241 131.2)"
+        ]
+      },
+      "coral": {
+        "role": "secondary",
+        "displayName": "Apricot Coral",
+        "tonalRamp": [
+          "oklch(15% 0.0785 39.5)",
+          "oklch(25% 0.0785 39.5)",
+          "oklch(36% 0.0785 39.5)",
+          "oklch(48% 0.0785 39.5)",
+          "oklch(60% 0.0785 39.5)",
+          "oklch(72% 0.0785 39.5)",
+          "oklch(84% 0.0785 39.5)",
+          "oklch(95% 0.0785 39.5)"
+        ]
+      },
+      "error": {
+        "role": "secondary",
+        "displayName": "Brick Error",
+        "tonalRamp": [
+          "oklch(15% 0.1325 27.1)",
+          "oklch(25% 0.1325 27.1)",
+          "oklch(36% 0.1325 27.1)",
+          "oklch(48% 0.1325 27.1)",
+          "oklch(60% 0.1325 27.1)",
+          "oklch(72% 0.1325 27.1)",
+          "oklch(84% 0.1325 27.1)",
+          "oklch(95% 0.1325 27.1)"
+        ]
+      },
+      "error-bg": {
+        "role": "secondary",
+        "displayName": "Blush Error Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0266 41.1)",
+          "oklch(25% 0.0266 41.1)",
+          "oklch(36% 0.0266 41.1)",
+          "oklch(48% 0.0266 41.1)",
+          "oklch(60% 0.0266 41.1)",
+          "oklch(72% 0.0266 41.1)",
+          "oklch(84% 0.0266 41.1)",
+          "oklch(95% 0.0266 41.1)"
+        ]
+      },
+      "focus": {
+        "role": "secondary",
+        "displayName": "Rust Focus",
+        "tonalRamp": [
+          "oklch(15% 0.1450 36.5)",
+          "oklch(25% 0.1450 36.5)",
+          "oklch(36% 0.1450 36.5)",
+          "oklch(48% 0.1450 36.5)",
+          "oklch(60% 0.1450 36.5)",
+          "oklch(72% 0.1450 36.5)",
+          "oklch(84% 0.1450 36.5)",
+          "oklch(95% 0.1450 36.5)"
+        ]
+      },
+      "text-on-ink": {
+        "role": "neutral",
+        "displayName": "Light Sage Text",
+        "tonalRamp": [
+          "oklch(15% 0.0261 145.3)",
+          "oklch(25% 0.0261 145.3)",
+          "oklch(36% 0.0261 145.3)",
+          "oklch(48% 0.0261 145.3)",
+          "oklch(60% 0.0261 145.3)",
+          "oklch(72% 0.0261 145.3)",
+          "oklch(84% 0.0261 145.3)",
+          "oklch(95% 0.0261 145.3)"
+        ]
+      },
+      "text-on-mint": {
+        "role": "neutral",
+        "displayName": "Olive Text",
+        "tonalRamp": [
+          "oklch(15% 0.0656 136.0)",
+          "oklch(25% 0.0656 136.0)",
+          "oklch(36% 0.0656 136.0)",
+          "oklch(48% 0.0656 136.0)",
+          "oklch(60% 0.0656 136.0)",
+          "oklch(72% 0.0656 136.0)",
+          "oklch(84% 0.0656 136.0)",
+          "oklch(95% 0.0656 136.0)"
+        ]
+      },
+      "line-on-mint": {
+        "role": "neutral",
+        "displayName": "Olive Line",
+        "tonalRamp": [
+          "oklch(15% 0.0682 126.7)",
+          "oklch(25% 0.0682 126.7)",
+          "oklch(36% 0.0682 126.7)",
+          "oklch(48% 0.0682 126.7)",
+          "oklch(60% 0.0682 126.7)",
+          "oklch(72% 0.0682 126.7)",
+          "oklch(84% 0.0682 126.7)",
+          "oklch(95% 0.0682 126.7)"
+        ]
+      },
+      "photo-caption": {
+        "role": "neutral",
+        "displayName": "Photo Caption Sage",
+        "tonalRamp": [
+          "oklch(15% 0.0228 141.2)",
+          "oklch(25% 0.0228 141.2)",
+          "oklch(36% 0.0228 141.2)",
+          "oklch(48% 0.0228 141.2)",
+          "oklch(60% 0.0228 141.2)",
+          "oklch(72% 0.0228 141.2)",
+          "oklch(84% 0.0228 141.2)",
+          "oklch(95% 0.0228 141.2)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Landing Display",
+        "purpose": "Large, tight landing headline."
+      },
+      "headline": {
+        "displayName": "Section Headline",
+        "purpose": "Large explanatory section headings."
+      },
+      "studio-title": {
+        "displayName": "Studio Title",
+        "purpose": "The working-screen introduction."
+      },
+      "title": {
+        "displayName": "Editor Title",
+        "purpose": "Marketplace draft heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Ordinary readable prose."
+      },
+      "body-edit": {
+        "displayName": "Description Editing",
+        "purpose": "Open line spacing for editable draft descriptions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Common field labels and navigation."
+      },
+      "tag": {
+        "displayName": "Tag",
+        "purpose": "Passive draft keyword descriptors."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Primary and secondary action labels."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "background-color 160ms ease-out, color 160ms ease-out, border-color 160ms ease-out",
+        "purpose": "Buttons, links, inputs and textareas change state without translation."
+      },
+      {
+        "name": "waiting-marker",
+        "value": "breathe 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate",
+        "purpose": "Alternates the waiting marker between square and rotated circle; animation is disabled for reduced motion."
+      },
+      {
+        "name": "waiting-marker-end",
+        "value": "transform: rotate(90deg); border-radius: 50%;",
+        "purpose": "The breathe keyframe endpoint."
+      },
+      {
+        "name": "page-scroll",
+        "value": "smooth",
+        "purpose": "Anchor scrolling; reduced-motion preference changes it to auto."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "fields",
+        "value": "540px"
+      },
+      {
+        "name": "landing-split",
+        "value": "800px"
+      },
+      {
+        "name": "studio-split",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Evergreen Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary actions, shared by dark and green source variants.",
+      "html": "<button type=\"button\" class=\"ds-btn ds-btn-primary\">Make a listing <svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12h16M14 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-btn{font-family:var(--font-geist-sans, sans-serif);min-height:48px;display:inline-flex;justify-content:center;align-items:center;gap:12px;padding:12px 20px;border:1px solid transparent;border-radius:8px;font-size:16px;font-weight:600;line-height:1.3;text-decoration:none;text-align:center;cursor:pointer;transition:background-color 160ms ease-out,color 160ms ease-out,border-color 160ms ease-out;}.ds-icon{width:22px;height:22px;flex:0 0 auto;}.ds-btn:focus-visible{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}.ds-btn:disabled{background:var(--soft,#e8ebe0);color:var(--muted,#53665b);border-color:var(--line,#bcc5b5);cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-btn{transition:none;}}.ds-btn-primary{background:var(--green,#214d3a);color:var(--surface,#fffef9);}.ds-btn-primary:hover{background:var(--green-hover,#143624);}.ds-btn-primary:disabled{background:var(--soft,#e8ebe0);color:var(--muted,#53665b);}"
+    },
+    {
+      "name": "Mint Button",
+      "kind": "button",
+      "refersTo": "button-mint",
+      "description": "Light action on an ink surface.",
+      "html": "<button type=\"button\" class=\"ds-btn ds-btn-mint\">Start with your photos <svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12h16M14 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-btn{font-family:var(--font-geist-sans, sans-serif);min-height:48px;display:inline-flex;justify-content:center;align-items:center;gap:12px;padding:12px 20px;border:1px solid transparent;border-radius:8px;font-size:16px;font-weight:600;line-height:1.3;text-decoration:none;text-align:center;cursor:pointer;transition:background-color 160ms ease-out,color 160ms ease-out,border-color 160ms ease-out;}.ds-icon{width:22px;height:22px;flex:0 0 auto;}.ds-btn:focus-visible{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}.ds-btn:disabled{background:var(--soft,#e8ebe0);color:var(--muted,#53665b);border-color:var(--line,#bcc5b5);cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-btn{transition:none;}}.ds-btn-mint{background:var(--mint,#d5edb5);color:var(--ink,#172e25);}.ds-btn-mint:hover{background:var(--surface,#fffef9);}.ds-btn-mint:disabled{background:var(--soft,#e8ebe0);color:var(--muted,#53665b);}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary reset, copy and alternate-marketplace actions.",
+      "html": "<button type=\"button\" class=\"ds-btn ds-btn-outline\">Try another marketplace <svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12h16M14 6l6 6-6 6\"/></svg></button>",
+      "css": ".ds-btn{font-family:var(--font-geist-sans, sans-serif);min-height:48px;display:inline-flex;justify-content:center;align-items:center;gap:12px;padding:12px 20px;border:1px solid transparent;border-radius:8px;font-size:16px;font-weight:600;line-height:1.3;text-decoration:none;text-align:center;cursor:pointer;transition:background-color 160ms ease-out,color 160ms ease-out,border-color 160ms ease-out;}.ds-icon{width:22px;height:22px;flex:0 0 auto;}.ds-btn:focus-visible{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}.ds-btn:disabled{background:var(--soft,#e8ebe0);color:var(--muted,#53665b);border-color:var(--line,#bcc5b5);cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-btn{transition:none;}}.ds-btn-outline{background:transparent;color:var(--ink,#172e25);border-color:var(--line,#bcc5b5);}.ds-btn-outline:hover{background:var(--soft,#e8ebe0);border-color:var(--green,#214d3a);}.ds-btn-outline:disabled{background:var(--soft,#e8ebe0);color:var(--muted,#53665b);border-color:var(--line,#bcc5b5);}"
+    },
+    {
+      "name": "Seller Text Field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "Native input for seller knowledge.",
+      "html": "<label class=\"ds-field\"><span>Brand</span><input type=\"text\" placeholder=\"e.g. Levi’s\" maxlength=\"200\"/></label>",
+      "css": ".ds-field{font-family:var(--font-geist-sans, sans-serif);display:flex;flex-direction:column;gap:7px;color:var(--ink,#172e25);}.ds-field>span{font-size:14px;font-weight:550;}.ds-field input{font-family:var(--font-geist-sans, sans-serif);width:100%;min-height:48px;padding:11px 12px;border:1px solid var(--line,#bcc5b5);border-radius:6px;background:var(--surface,#fffef9);color:var(--ink,#172e25);font-size:16px;caret-color:var(--green,#214d3a);transition:background-color 160ms ease-out,color 160ms ease-out,border-color 160ms ease-out;}.ds-field input::placeholder{color:var(--muted,#53665b);}.ds-field input:focus-visible{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}@media(prefers-reduced-motion:reduce){.ds-field input{transition:none;}}"
+    },
+    {
+      "name": "Description Textarea",
+      "kind": "input",
+      "refersTo": "description-field",
+      "description": "Vertically resizable native draft text.",
+      "html": "<label class=\"ds-description-label\" for=\"ds-description\">Description <span>Editable</span></label><textarea class=\"ds-description\" id=\"ds-description\" rows=\"8\">A classic blue denim jacket with a button front, pointed collar and chest pockets.</textarea>",
+      "css": ".ds-description-label{font-family:var(--font-geist-sans, sans-serif);display:block;margin-bottom:12px;font-size:16px;font-weight:600;color:var(--ink,#172e25);}.ds-description-label span{font-size:12px;font-weight:400;color:var(--muted,#53665b);margin-left:8px;}.ds-description{font-family:var(--font-geist-sans, sans-serif);width:100%;min-height:220px;resize:vertical;border:1px solid var(--line,#bcc5b5);border-radius:6px;padding:14px;background:var(--surface,#fffef9);color:var(--ink,#172e25);font-size:16px;line-height:1.65;caret-color:var(--green,#214d3a);transition:background-color 160ms ease-out,color 160ms ease-out,border-color 160ms ease-out;}.ds-description:focus-visible{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}@media(prefers-reduced-motion:reduce){.ds-description{transition:none;}}"
+    },
+    {
+      "name": "Header Navigation",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Brand, secondary workflow link and retained primary studio action.",
+      "html": "<header class=\"ds-header\"><a href=\"/\" class=\"ds-brand\" aria-label=\"Snaphaul home\"><span class=\"ds-brand-mark\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h4l2-3h4l2 3h4v13H4Z\"/><circle cx=\"12\" cy=\"13\" r=\"4\"/></svg></span>snaphaul<span class=\"ds-brand-dot\">.</span></a><nav class=\"ds-nav\" aria-label=\"Main\"><a class=\"ds-nav-link\" href=\"#workflow\">How it works</a><a class=\"ds-btn ds-btn-primary\" href=\"/app\">Open the studio <svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12h16M14 6l6 6-6 6\"/></svg></a></nav></header>",
+      "css": ".ds-btn{font-family:var(--font-geist-sans, sans-serif);min-height:48px;display:inline-flex;justify-content:center;align-items:center;gap:12px;padding:12px 20px;border:1px solid transparent;border-radius:8px;font-size:16px;font-weight:600;line-height:1.3;text-decoration:none;text-align:center;cursor:pointer;transition:background-color 160ms ease-out,color 160ms ease-out,border-color 160ms ease-out;}.ds-icon{width:22px;height:22px;flex:0 0 auto;}.ds-btn:focus-visible{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}.ds-btn:disabled{background:var(--soft,#e8ebe0);color:var(--muted,#53665b);border-color:var(--line,#bcc5b5);cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-btn{transition:none;}}.ds-header{font-family:var(--font-geist-sans, sans-serif);min-height:94px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line,#bcc5b5);}.ds-brand{display:inline-flex;align-items:center;gap:9px;color:var(--ink,#172e25);font-size:28px;font-weight:750;letter-spacing:-.035em;text-decoration:none;min-height:44px;}.ds-brand-mark{display:grid;place-items:center;height:38px;width:38px;background:var(--ink,#172e25);color:var(--mint,#d5edb5);border-radius:9px;}.ds-brand-mark .ds-icon{height:25px;width:25px;}.ds-brand-dot{margin-left:-9px;color:var(--green,#214d3a);}.ds-nav{display:flex;align-items:center;gap:24px;}.ds-nav-link{color:var(--ink,#172e25);padding:12px 0;font-size:14px;font-weight:550;text-decoration:none;}.ds-nav-link:hover{text-decoration:underline;}.ds-brand:focus-visible,.ds-nav-link:focus-visible{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}.ds-btn-primary{background:var(--green,#214d3a);color:var(--surface,#fffef9);}.ds-btn-primary:hover{background:var(--green-hover,#143624);}@media(max-width:539px){.ds-header{min-height:82px;gap:12px;}.ds-nav{gap:12px;}.ds-nav-link{display:none;}.ds-brand{font-size:24px;gap:7px;}.ds-brand-mark{width:32px;height:32px;}.ds-brand-dot{margin-left:-7px;}.ds-header .ds-btn{font-size:13px;padding:11px 13px;gap:7px;}}"
+    },
+    {
+      "name": "Keyword Tags",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Passive, wrapping descriptors from a draft.",
+      "html": "<ul class=\"ds-tags\" aria-label=\"Tags and keywords\"><li>blue denim</li><li>button front</li><li>jacket</li></ul>",
+      "css": ".ds-tags{font-family:var(--font-geist-sans, sans-serif);list-style:none;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:0;}.ds-tags li{border:1px solid var(--line,#bcc5b5);border-radius:4px;padding:5px 10px;font-size:13px;line-height:1.55;color:var(--muted,#53665b);overflow-wrap:anywhere;max-width:100%;}"
+    },
+    {
+      "name": "Draft Card",
+      "kind": "card",
+      "refersTo": "draft-card",
+      "description": "Flat cream container for editable listing sections.",
+      "html": "<section class=\"ds-draft\"><div class=\"ds-draft-heading\"><h2>eBay draft</h2><p>Ready for your final say.</p></div><p class=\"ds-review\">Review every claim before publishing. This draft stays in this page only.</p></section>",
+      "css": ".ds-draft{font-family:var(--font-geist-sans, sans-serif);background:var(--surface,#fffef9);color:var(--ink,#172e25);padding:24px;border-radius:var(--radius,12px);}.ds-draft-heading h2{margin:0;font-size:28px;font-weight:600;line-height:1.1;letter-spacing:-.025em;}.ds-draft-heading p{font-size:14px;line-height:1.55;color:var(--muted,#53665b);margin:6px 0 0;}.ds-review{margin:22px 0 0;padding-top:16px;border-top:1px solid var(--line,#bcc5b5);font-size:12px;line-height:1.55;color:var(--muted,#53665b);}@media(min-width:540px){.ds-draft{padding:30px;}}@media(min-width:1024px){.ds-draft{padding:32px;}}@media(max-width:539px){.ds-draft-heading h2{font-size:26px;}}"
+    },
+    {
+      "name": "Marketplace Radios",
+      "kind": "custom",
+      "refersTo": "marketplace-option",
+      "description": "Whole-tile native radios with mint selection and visible focus.",
+      "html": "<fieldset class=\"ds-marketplaces\"><legend>Choose your marketplace</legend><div class=\"ds-marketplace-grid\"><label class=\"ds-marketplace-option\"><input type=\"radio\" name=\"ds-marketplace\" value=\"ebay\" checked/><span>eBay</span><span class=\"ds-radio-mark\" aria-hidden=\"true\"></span></label><label class=\"ds-marketplace-option\"><input type=\"radio\" name=\"ds-marketplace\" value=\"etsy\"/><span>Etsy</span><span class=\"ds-radio-mark\" aria-hidden=\"true\"></span></label></div></fieldset>",
+      "css": ".ds-marketplaces{font-family:var(--font-geist-sans, sans-serif);margin:0;padding:0;border:0;min-width:0;color:var(--ink,#172e25);}.ds-marketplaces legend{padding:0;margin-bottom:14px;font-size:17px;font-weight:600;}.ds-marketplace-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.ds-marketplace-option{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:12px 14px;background:var(--surface,#fffef9);border:1px solid var(--line,#bcc5b5);border-radius:8px;cursor:pointer;font-weight:550;}.ds-marketplace-option input{position:absolute;opacity:0;width:100%;height:100%;inset:0;margin:0;cursor:pointer;}.ds-marketplace-option:has(input:focus-visible){outline:3px solid var(--focus,#b54b2d);outline-offset:3px;}.ds-marketplace-option:has(input:checked){background:var(--mint,#d5edb5);border-color:var(--green,#214d3a);}.ds-radio-mark{width:17px;height:17px;flex-shrink:0;border:1px solid var(--muted,#53665b);border-radius:50%;}.ds-marketplace-option:has(input:checked) .ds-radio-mark{border:5px solid var(--green,#214d3a);background:var(--mint,#d5edb5);}.ds-marketplace-option input:disabled{cursor:not-allowed;}.ds-marketplaces:disabled{opacity:.72;}@media(forced-colors:active){.ds-radio-mark{border-color:ButtonText;}.ds-marketplace-option:has(input:checked) .ds-radio-mark{background:Highlight;}}"
+    },
+    {
+      "name": "Contact Sheet Upload",
+      "kind": "custom",
+      "refersTo": "contact-sheet",
+      "description": "Ink source panel and native file-selection affordance.",
+      "html": "<section class=\"ds-contact-sheet\"><div class=\"ds-upload-empty\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h4l2-3h4l2 3h4v13H4Z\"/><circle cx=\"12\" cy=\"13\" r=\"4\"/></svg><h2>Let the photos<br/>do the talking.</h2><p>Drop your item photos here,<br/>or choose them below.</p></div><label class=\"ds-btn ds-upload\"><svg class=\"ds-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Choose photos<input type=\"file\" accept=\"image/jpeg,image/png,image/webp,image/gif\" multiple/></label><p class=\"ds-upload-hint\">JPEG, PNG, WebP or GIF · Up to 20 MB each<br/>You can also paste images from your clipboard.</p></section>",
+      "css": ".ds-btn{font-family:var(--font-geist-sans, sans-serif);min-height:48px;display:inline-flex;justify-content:center;align-items:center;gap:12px;padding:12px 20px;border:1px solid transparent;border-radius:8px;font-size:16px;font-weight:600;line-height:1.3;text-decoration:none;text-align:center;cursor:pointer;transition:background-color 160ms ease-out,color 160ms ease-out,border-color 160ms ease-out;}.ds-icon{width:22px;height:22px;flex:0 0 auto;}.ds-btn:focus-visible{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}.ds-btn:disabled{background:var(--soft,#e8ebe0);color:var(--muted,#53665b);border-color:var(--line,#bcc5b5);cursor:not-allowed;}@media(prefers-reduced-motion:reduce){.ds-btn{transition:none;}}.ds-contact-sheet{font-family:var(--font-geist-sans, sans-serif);background:var(--ink,#172e25);color:var(--paper,#f6f4ec);border-radius:var(--radius,12px);padding:20px;}.ds-contact-sheet.ds-is-dragging{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}.ds-upload-empty{padding:20px 4px 26px;}.ds-upload-empty>.ds-icon{height:36px;width:36px;color:var(--mint,#d5edb5);margin-bottom:22px;}.ds-upload-empty h2{margin:0 0 18px;font-size:clamp(2rem,4vw,2.8rem);line-height:1.1;letter-spacing:-.03em;font-weight:550;}.ds-upload-empty p{margin:0;font-size:15px;line-height:1.55;color:#c4d3c4;}.ds-upload{position:relative;background:var(--mint,#d5edb5);width:100%;color:var(--ink,#172e25);}.ds-upload:hover{background:var(--surface,#fffef9);}.ds-upload:focus-within{outline:3px solid var(--focus,#b54b2d);outline-offset:4px;}.ds-upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}.ds-upload.ds-is-disabled{background:#3c5447;color:#d6e2d4;border:none;cursor:not-allowed;}.ds-upload-hint{margin:12px 0 0;font-size:12px;line-height:1.6;color:#c4d3c4;text-align:center;}@media(min-width:1024px){.ds-contact-sheet{padding:24px;}}@media(forced-colors:active){.ds-upload{border:1px solid ButtonText;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The contact-sheet studio",
+    "overview": "Snaphaul treats an item as the starting material and the listing as a piece of editable work. Warm paper, green-black photo surfaces and mint guidance make the studio feel calm, direct and ready for use. The familiar camera mark anchors the identity; photographic evidence supplies the visual interest.\n\nLarge, tightly set Geist headlines give the landing page its confidence. The working interface shifts to clear labels, native controls and spacious prose. Flat surfaces and small corners keep the contact-sheet character legible without competing with the item.",
+    "keyCharacteristics": [
+      "Warm paper canvas with evergreen actions and mint task surfaces.",
+      "Strong sans-serif headlines paired with readable editing text.",
+      "A lead photo followed by numbered detail views.",
+      "Flat containers, fine dividers and visible keyboard focus.",
+      "Native form behavior, mobile stacking and reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Task Tone Rule",
+        "body": "Mint identifies a selection, a working surface or guidance; evergreen identifies an action. Preserve the distinction when extending a screen.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readable Copy Rule",
+        "body": "Keep the large, tight heading treatment out of descriptions and supporting prose. Editing text retains the observed body size and open line spacing.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "Use tonal surfaces and fine dividers for separation. Keep these recorded components shadow-free.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve the camera mark, wordmark and observed evergreen/mint action hierarchy.",
+      "Do keep native radios, file inputs, disclosures and editable textareas operational.",
+      "Do retain visible rust focus outlines and touch-sized controls.",
+      "Do stack source and editor on small screens and let long copy and tags wrap.",
+      "Do preserve reduced-motion and forced-color treatments."
+    ],
+    "donts": [
+      "Don't add shadows to these flat sheet components.",
+      "Don't turn descriptive tags into choice controls without an explicit interaction design.",
+      "Don't apply display typography to editable descriptions or supporting guidance.",
+      "Don't reintroduce decorative kickers above headings; the shipped headings start directly."
+    ]
+  }
+}
