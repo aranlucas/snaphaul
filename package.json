@@ -17,7 +17,7 @@
     "@openrouter/ai-sdk-provider": "^3.1.0",
     "ai": "^7.0.122",
     "browser-image-compression": "^2.0.2",
-    "next": "16.3.6",
+    "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.6.5"
@@ -27,7 +27,7 @@
     "@types/node": "^26",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "oxfmt": "^0.71.0",
+    "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "tailwindcss": "^4",
     "typescript": "^7.0.2"
