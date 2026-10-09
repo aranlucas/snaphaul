@@ -31,8 +31,10 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Build for production with
-`pnpm build`.
+Open [https://snaphaul.localhost](https://snaphaul.localhost). `pnpm dev` runs
+through [Portless](https://github.com/vercel-labs/portless) (a dev dependency); its
+first run may ask for `sudo` to bind port 443 and trust a local certificate. Build
+for production with `pnpm build`.
 
 The API route needs a server-side OpenRouter key. Copy it into your local
 environment before generating a listing:

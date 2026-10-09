@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "portless run next dev",
     "build": "next build",
     "start": "next start",
     "lint": "oxlint .",
@@ -29,6 +29,7 @@
     "@types/react-dom": "^19",
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
+    "portless": "0.15.7",
     "tailwindcss": "^4",
     "typescript": "^7.0.2"
   }
