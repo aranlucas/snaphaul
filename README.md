@@ -28,10 +28,11 @@ marketplace's rules.
 
 ```bash
 pnpm install
+npm install -g portless@0.15.7 # requires Node.js 24+
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Build for production with
+Open the URL printed by Portless (normally `https://snaphaul.localhost`). Build for production with
 `pnpm build`.
 
 The API route needs a server-side OpenRouter key. Copy it into your local
@@ -52,6 +53,30 @@ Supported settings:
 
 Without eBay credentials the UI still shows the model's estimate. When enabled,
 comps are asking prices from live listings, not sold-price evidence.
+
+
+## Local URLs with Portless
+
+The standard development command uses [Portless](https://github.com/vercel-labs/portless).
+Install its pinned CLI once with Node.js 24 or newer, then run this repository's command after the
+normal dependency and environment setup:
+
+```sh
+npm install -g portless@0.15.7
+pnpm dev
+```
+
+The main checkout uses `https://snaphaul.localhost` with the default proxy settings.
+Use the URL printed by Portless if you have changed its proxy port, TLS, or TLD.
+Linked Git worktrees get a branch prefix, so each checkout has its own origin.
+The first HTTPS run can request local administrator permission to bind port 443,
+trust its development certificate, and synchronize local hostnames. Ctrl+C stops
+the child server and removes its route. The direct fallback below starts the
+server without the proxy.
+
+Keep the existing server-side API keys in your local environment. `APP_URL` only
+controls metadata; no callback or public deployment setting needs to change.
+Use `pnpm dev:direct` for the existing localhost workflow.
 
 ## Request flow
 
