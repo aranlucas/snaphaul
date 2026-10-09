@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "portless",
+    "dev": "portless run --name snaphaul next dev",
     "build": "next build",
     "start": "next start",
     "lint": "oxlint .",
@@ -11,8 +11,7 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "tsc --project tsconfig.test.json && node --test --test-concurrency=1 .test-build/tests/*.test.js",
-    "dev:direct": "next dev"
+    "test": "tsc --project tsconfig.test.json && node --test --test-concurrency=1 .test-build/tests/*.test.js"
   },
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^3.1.0",
@@ -32,9 +31,5 @@
     "oxlint": "^1.87.0",
     "tailwindcss": "^4",
     "typescript": "^7.0.2"
-  },
-  "portless": {
-    "name": "snaphaul",
-    "script": "dev:direct"
   }
 }
