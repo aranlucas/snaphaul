@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test, type TestContext } from "node:test";
+import { afterEach, test, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "../app/api/generate/route";
 import syntheticImages from "./synthetic-images.json";
@@ -308,24 +308,21 @@ test("non-ASCII bytes cannot masquerade as a GIF signature", async () => {
   assert.equal(attempts.length, 0);
 });
 
-function mockProviderEnvironment(context: TestContext) {
-  const keys = ["OPENROUTER_API_KEY", "EBAY_CLIENT_ID", "EBAY_CLIENT_SECRET"] as const;
-  const original = keys.map((key) => process.env[key]);
-  context.after(() => {
-    keys.forEach((key, index) => {
-      if (original[index] === undefined) delete process.env[key];
-      else process.env[key] = original[index];
-    });
-  });
-  process.env.OPENROUTER_API_KEY = "synthetic-local-test-key";
-  delete process.env.EBAY_CLIENT_ID;
-  delete process.env.EBAY_CLIENT_SECRET;
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
+
+function mockProviderEnvironment() {
+  vi.stubEnv("OPENROUTER_API_KEY", "synthetic-local-test-key");
+  vi.stubEnv("EBAY_CLIENT_ID", undefined);
+  vi.stubEnv("EBAY_CLIENT_SECRET", undefined);
 }
 
-test("the route counts one successful generated listing using an offline HTTP adapter", async (context) => {
-  mockProviderEnvironment(context);
+test("the route counts one successful generated listing using an offline HTTP adapter", async () => {
+  mockProviderEnvironment();
   let calls = 0;
-  context.mock.method(globalThis, "fetch", async () => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
     calls++;
     return Response.json({
       id: "synthetic-completion",
@@ -355,10 +352,10 @@ test("the route counts one successful generated listing using an offline HTTP ad
   assert.equal(calls, 1);
 });
 
-test("provider failure through the route does not consume allowance or reveal diagnostics", async (context) => {
-  mockProviderEnvironment(context);
+test("provider failure through the route does not consume allowance or reveal diagnostics", async () => {
+  mockProviderEnvironment();
   let calls = 0;
-  context.mock.method(globalThis, "fetch", async () => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
     calls++;
     throw new Error("synthetic-private-provider-diagnostic");
   });
