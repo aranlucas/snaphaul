@@ -17,7 +17,7 @@
     "@openrouter/ai-sdk-provider": "^3.1.0",
     "ai": "^7.0.122",
     "browser-image-compression": "^2.0.2",
-    "next": "16.3.6",
+    "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.6.5"
