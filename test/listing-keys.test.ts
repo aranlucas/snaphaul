@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { keyedValues } from "../lib/listing-keys";
+import { keyedValues } from "@/lib/listing-keys";
 
 const identifyTag = (tag: string) => tag;
 

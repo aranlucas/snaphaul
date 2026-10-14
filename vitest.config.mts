@@ -11,7 +11,7 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
-          include: ["tests/**/*.test.ts"],
+          include: ["test/**/*.test.ts"],
           globals: false,
         },
       },
@@ -20,8 +20,8 @@ export default defineConfig({
         test: {
           name: "browser",
           environment: "jsdom",
-          include: ["tests/**/*.test.tsx"],
-          setupFiles: ["./tests/vitest.setup.ts"],
+          include: ["test/**/*.test.tsx"],
+          setupFiles: ["./test/vitest.setup.ts"],
           globals: false,
         },
       },

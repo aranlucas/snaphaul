@@ -1,6 +1,6 @@
 import { createEvent, fireEvent, render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
-import GeneratorPage from "../app/app/page";
+import GeneratorPage from "@/app/app/page";
 
 test("leaving the photo drop zone for a non-DOM target clears its active state", () => {
   render(<GeneratorPage />);
