@@ -33,6 +33,7 @@ export function Icon({ name, className = "" }: IconProps) {
       </>
     ),
   };
+
   return (
     <svg
       className={`icon ${className}`}

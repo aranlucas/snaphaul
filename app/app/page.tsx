@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { keyedValues } from "@/lib/listing-keys";
 import { z } from "zod";
 import imageCompression from "browser-image-compression";
 import { MARKETPLACE_CONFIG, MARKETPLACES, type Marketplace } from "@/lib/marketplaces";
@@ -19,7 +21,9 @@ type Listing = {
   price_reasoning: string;
   photo_notes: string[];
 };
+
 type Comps = { count: number; median: number; p25: number; p75: number };
+
 const GenerationResponseSchema = z.object({
   listing: z.object({
     item_identification: z.string(),
@@ -38,9 +42,11 @@ const GenerationResponseSchema = z.object({
     .nullish(),
   remaining: z.number().optional(),
 });
+
 const GenerationErrorSchema = z.object({ error: z.string().optional() });
 
 type Photo = { id: number; src: string; name: string };
+
 const EMPTY_DETAILS = {
   brand: "",
   condition: "",
@@ -49,7 +55,9 @@ const EMPTY_DETAILS = {
   originalPrice: "",
   notes: "",
 };
+
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
 function fullListingText(l: Listing) {
@@ -77,25 +85,27 @@ export default function GeneratorPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
   const photosRef = useRef<Photo[]>([]);
-  const uploadEpoch = useRef(0);
+  const operationVersions = useRef({ upload: 0, copy: 0 });
   const uploadBusy = useRef(false);
   const photoId = useRef(0);
   const revisionRef = useRef(0);
   const requestRef = useRef<AbortController | null>(null);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(true);
-  const copyToken = useRef(0);
 
   useEffect(() => {
     mounted.current = true;
+    const versions = operationVersions.current;
+
     return () => {
       mounted.current = false;
-      // oxlint-disable-next-line react-hooks/exhaustive-deps -- Invalidate the latest clipboard operation on unmount.
-      copyToken.current++;
-      // oxlint-disable-next-line react-hooks/exhaustive-deps -- Invalidate the latest async upload on unmount.
-      uploadEpoch.current++;
+      versions.copy++;
+      versions.upload++;
       requestRef.current?.abort();
-      if (copyTimer.current) clearTimeout(copyTimer.current);
+
+      if (copyTimer.current) {
+        clearTimeout(copyTimer.current);
+      }
     };
   }, []);
 
@@ -103,6 +113,7 @@ export default function GeneratorPage() {
     revisionRef.current++;
     setRevision(revisionRef.current);
   }
+
   function updatePhotos(next: Photo[]) {
     photosRef.current = next;
     setPhotos(next);
@@ -110,8 +121,11 @@ export default function GeneratorPage() {
   }
 
   async function addFiles(files: File[]) {
-    if (uploadBusy.current || requestRef.current || !files.length) return;
-    const epoch = uploadEpoch.current;
+    if (uploadBusy.current || requestRef.current || !files.length) {
+      return;
+    }
+
+    const epoch = operationVersions.current.upload;
     uploadBusy.current = true;
     setUploading(true);
     setUploadError("");
@@ -119,19 +133,23 @@ export default function GeneratorPage() {
     const errors: string[] = [];
     const added: Photo[] = [];
     const available = 5 - photosRef.current.length;
+
     for (const file of files) {
       if (!ACCEPTED.includes(file.type)) {
         errors.push(`${file.name}: use JPEG, PNG, WebP or GIF.`);
         continue;
       }
+
       if (file.size > MAX_FILE_BYTES) {
         errors.push(`${file.name}: exceeds 20 MB. Choose a smaller image.`);
         continue;
       }
+
       if (added.length >= available) {
         errors.push("You can add up to 5 photos. Remove one to make room.");
         break;
       }
+
       try {
         // oxlint-disable-next-line eslint/no-await-in-loop -- Compress sequentially to cap memory and preserve the five-photo limit.
         const out = await imageCompression(file, {
@@ -140,17 +158,31 @@ export default function GeneratorPage() {
           useWebWorker: false,
           fileType: "image/jpeg",
         });
-        if (out.size > 1024 * 1024) throw new Error("Image could not be reduced");
+
+        if (out.size > 1024 * 1024) {
+          throw new Error("Image could not be reduced");
+        }
+
         // oxlint-disable-next-line eslint/no-await-in-loop -- Read each compressed photo before processing the next.
         const src = await imageCompression.getDataUrlFromFile(out);
         added.push({ id: ++photoId.current, src, name: file.name });
       } catch {
         errors.push(`${file.name}: couldn’t read this photo. Try another image.`);
       }
-      if (epoch !== uploadEpoch.current || !mounted.current) return;
+
+      if (epoch !== operationVersions.current.upload || !mounted.current) {
+        return;
+      }
     }
-    if (epoch !== uploadEpoch.current || !mounted.current) return;
-    if (added.length) updatePhotos([...photosRef.current, ...added]);
+
+    if (epoch !== operationVersions.current.upload || !mounted.current) {
+      return;
+    }
+
+    if (added.length) {
+      updatePhotos([...photosRef.current, ...added]);
+    }
+
     setUploadError(errors.join(" "));
     setUploading(false);
     uploadBusy.current = false;
@@ -162,12 +194,15 @@ export default function GeneratorPage() {
         .filter((i) => i.kind === "file")
         .map((i) => i.getAsFile())
         .filter((f): f is File => f !== null);
+
       if (files.length) {
         event.preventDefault();
         addFiles(files).catch(() => setUploadError("Couldn’t prepare these photos. Try again."));
       }
     };
+
     document.addEventListener("paste", onPaste);
+
     return () => document.removeEventListener("paste", onPaste);
   });
 
@@ -179,10 +214,10 @@ export default function GeneratorPage() {
   }
 
   function reset() {
-    copyToken.current++;
+    operationVersions.current.copy++;
     requestRef.current?.abort();
     requestRef.current = null;
-    uploadEpoch.current++;
+    operationVersions.current.upload++;
     uploadBusy.current = false;
     setUploading(false);
     setLoading(false);
@@ -201,23 +236,28 @@ export default function GeneratorPage() {
   }
 
   async function generate(target?: Marketplace) {
-    if (!photosRef.current.length || requestRef.current || uploadBusy.current || remaining === 0)
+    if (!photosRef.current.length || requestRef.current || uploadBusy.current || remaining === 0) {
       return;
+    }
+
     const mp = target ?? marketplace;
+
     if (target && target !== marketplace) {
       setMarketplace(target);
       changed();
     }
+
     const sourceRevision = revisionRef.current;
     const controller = new AbortController();
     requestRef.current = controller;
-    copyToken.current++;
+    operationVersions.current.copy++;
     setLoading(true);
     setError("");
     setNotice("");
     setCopyNotice("");
     setCopied("");
     const timeout = setTimeout(() => controller.abort(), 90000);
+
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -229,10 +269,18 @@ export default function GeneratorPage() {
           ...Object.fromEntries(Object.entries(details).filter(([, value]) => value.trim())),
         }),
       });
+
       const response: unknown = await res.json();
-      if (requestRef.current !== controller || !mounted.current) return;
+
+      if (requestRef.current !== controller || !mounted.current) {
+        return;
+      }
+
       if (!res.ok) {
-        if (res.status === 429) setRemaining(0);
+        if (res.status === 429) {
+          setRemaining(0);
+        }
+
         const failure = GenerationErrorSchema.safeParse(response);
         throw new Error(
           failure.success && failure.data.error
@@ -240,27 +288,44 @@ export default function GeneratorPage() {
             : "Couldn’t generate a draft. Try again.",
         );
       }
+
       const parsed = GenerationResponseSchema.safeParse(response);
-      if (!parsed.success) throw new Error("The response was incomplete. Try again.");
+
+      if (!parsed.success) {
+        throw new Error("The response was incomplete. Try again.");
+      }
+
       const data = parsed.data;
       setListing(data.listing);
       setListingFor(mp);
       setDraftRevision(sourceRevision);
       setComps(data.comps ?? null);
-      if (typeof data.remaining === "number") setRemaining(data.remaining);
+
+      if (data.remaining !== undefined) {
+        setRemaining(data.remaining);
+      }
+
       requestAnimationFrame(() => {
-        if (!mounted.current || requestRef.current !== null) return;
+        if (!mounted.current || requestRef.current !== null) {
+          return;
+        }
+
         resultsRef.current?.focus({ preventScroll: true });
-        if (window.matchMedia("(max-width: 1023px)").matches)
+
+        if (window.matchMedia("(max-width: 1023px)").matches) {
           resultsRef.current?.scrollIntoView({
             behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
               ? "auto"
               : "smooth",
             block: "start",
           });
+        }
       });
     } catch (e) {
-      if (requestRef.current !== controller || !mounted.current) return;
+      if (requestRef.current !== controller || !mounted.current) {
+        return;
+      }
+
       setError(
         controller.signal.aborted
           ? "This request took too long. You can try again; the earlier request may still finish."
@@ -270,35 +335,52 @@ export default function GeneratorPage() {
       );
     } finally {
       clearTimeout(timeout);
+
       if (requestRef.current === controller) {
         requestRef.current = null;
-        if (mounted.current) setLoading(false);
+
+        if (mounted.current) {
+          setLoading(false);
+        }
       }
     }
   }
 
   async function copy(label: string, text: string) {
-    const token = ++copyToken.current;
-    if (copyTimer.current) clearTimeout(copyTimer.current);
+    const token = ++operationVersions.current.copy;
+
+    if (copyTimer.current) {
+      clearTimeout(copyTimer.current);
+    }
+
     setCopied("");
     setCopyNotice("");
+
     try {
       await navigator.clipboard.writeText(text);
-      if (!mounted.current || token !== copyToken.current) return;
+
+      if (!mounted.current || token !== operationVersions.current.copy) {
+        return;
+      }
+
       setCopied(label);
       setCopyNotice(`${label} copied.`);
       copyTimer.current = setTimeout(() => {
-        if (mounted.current) setCopied("");
+        if (mounted.current) {
+          setCopied("");
+        }
       }, 2200);
     } catch {
-      if (mounted.current && token === copyToken.current)
+      if (mounted.current && token === operationVersions.current.copy) {
         setCopyNotice("Clipboard access was denied. Select the draft text and copy it manually.");
+      }
     }
   }
 
   const titleLimit = MARKETPLACE_CONFIG[listingFor].titleLimit;
   const busy = loading || uploading;
   const stale = listing && revision !== draftRevision;
+
   function copyButton(label: string, text: string) {
     return (
       <button
@@ -364,11 +446,18 @@ export default function GeneratorPage() {
                 className={`contact-sheet ${dragActive ? "is-dragging" : ""}`}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  if (!busy) setDragActive(true);
+
+                  if (!busy) {
+                    setDragActive(true);
+                  }
                 }}
                 onDragLeave={(e) => {
-                  if (!e.currentTarget.contains(e.relatedTarget as Node | null))
+                  if (
+                    !(e.relatedTarget instanceof Node) ||
+                    !e.currentTarget.contains(e.relatedTarget)
+                  ) {
                     setDragActive(false);
+                  }
                 }}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -383,8 +472,15 @@ export default function GeneratorPage() {
                     {photos.map((photo, i) => (
                       <figure className="photo-frame" key={photo.id}>
                         {/* Data URLs are already compressed locally; an image optimizer cannot fetch them. */}
-                        {/* oxlint-disable-next-line next/no-img-element */}
-                        <img src={photo.src} alt={`View ${i + 1}: ${photo.name}`} />
+                        <div className="photo-preview">
+                          <Image
+                            src={photo.src}
+                            alt={`View ${i + 1}: ${photo.name}`}
+                            fill
+                            unoptimized
+                            sizes="(max-width: 1023px) 100vw, 50vw"
+                          />
+                        </div>
                         <figcaption>
                           <span>{String(i + 1).padStart(2, "0")}</span>
                           <span>{i === 0 ? "Main view" : "Detail view"}</span>
@@ -689,9 +785,10 @@ export default function GeneratorPage() {
                     )}
                   </div>
                   <dl className="specifics">
-                    {listing.item_specifics.map((s, i) => (
-                      // oxlint-disable-next-line react/no-array-index-key -- Generated specifics are a static read-only list, and names may repeat.
-                      <div key={i}>
+                    {keyedValues(listing.item_specifics, (specific) =>
+                      JSON.stringify([specific.name, specific.value]),
+                    ).map(({ key, value: s }) => (
+                      <div key={key}>
                         <dt>{s.name}</dt>
                         <dd>{s.value}</dd>
                       </div>
@@ -708,9 +805,8 @@ export default function GeneratorPage() {
                     {copyButton("Tags", listing.tags.join(", "))}
                   </div>
                   <ul className="tag-list">
-                    {listing.tags.map((t, i) => (
-                      // oxlint-disable-next-line react/no-array-index-key -- Generated tags are not reordered or edited and may repeat.
-                      <li key={i}>{t}</li>
+                    {keyedValues(listing.tags, (tag) => tag).map(({ key, value }) => (
+                      <li key={key}>{value}</li>
                     ))}
                   </ul>
                 </div>
@@ -740,9 +836,8 @@ export default function GeneratorPage() {
                   <summary>What the AI noticed</summary>
                   <p>{listing.item_identification}</p>
                   <ul>
-                    {listing.photo_notes.map((n, i) => (
-                      // oxlint-disable-next-line react/no-array-index-key -- Generated notes are not reordered or edited and may repeat.
-                      <li key={i}>{n}</li>
+                    {keyedValues(listing.photo_notes, (note) => note).map(({ key, value }) => (
+                      <li key={key}>{value}</li>
                     ))}
                   </ul>
                 </details>

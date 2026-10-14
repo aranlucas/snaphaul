@@ -6,7 +6,9 @@ type SellerDetails = {
   originalPrice?: string;
   notes?: string;
 };
+
 export const MARKETPLACES = ["ebay", "etsy", "poshmark", "mercari"] as const;
+
 export type Marketplace = (typeof MARKETPLACES)[number];
 
 type MarketplaceConfig = {
@@ -64,10 +66,12 @@ export const SYSTEM_PROMPT = `You are an expert e-commerce reseller and SEO copy
 
 export function buildUserPrompt(marketplace: Marketplace, details: SellerDetails): string {
   const cfg = MARKETPLACE_CONFIG[marketplace];
+
   const detailLines = Object.entries(details)
     .filter(([, v]) => v?.trim())
     .map(([k, v]) => `- ${k}: ${v}`)
     .join("\n");
+
   const detailsBlock = detailLines
     ? `Seller-provided details (authoritative — trust these over what you see in photos):\n${detailLines}`
     : "No seller-provided details; infer everything from the photos.";

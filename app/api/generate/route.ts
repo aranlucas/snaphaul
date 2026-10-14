@@ -7,6 +7,7 @@ import { generateListing, ListingSchema } from "../../../lib/generate-listing";
 import { getEbayComps } from "../../../lib/ebay";
 
 export const runtime = "nodejs";
+
 export const maxDuration = 60;
 
 const FREE_LIMIT = 10;
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
   // durable, atomic server-owned store and a defined anonymous identity policy.
   const sid = req.cookies.get("sh_session")?.value ?? crypto.randomUUID();
   const used = Number(req.cookies.get(`sh_used_${sid}`)?.value ?? 0);
+
   if (used >= FREE_LIMIT) {
     return NextResponse.json(
       { error: `You've used all ${FREE_LIMIT} free generations. Unlimited access is coming soon!` },
@@ -39,8 +41,12 @@ export async function POST(req: NextRequest) {
   const outcome = await generateListing(req, {
     models: MODELS,
     async generate({ model, prompt, images }) {
-      if (!process.env.OPENROUTER_API_KEY) throw new Error("Missing OPENROUTER_API_KEY");
+      if (!process.env.OPENROUTER_API_KEY) {
+        throw new Error("Missing OPENROUTER_API_KEY");
+      }
+
       const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY });
+
       const result = await generateObject({
         model: openrouter(model),
         schema: ListingSchema,
@@ -58,19 +64,24 @@ export async function POST(req: NextRequest) {
         maxOutputTokens: 2000,
         maxRetries: 0,
       });
+
       return result.object;
     },
     getComps: getEbayComps,
   });
+
   if (outcome.kind === "invalid-input") {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
+
   if (outcome.kind === "too-large") {
     return NextResponse.json({ error: "Request is too large" }, { status: 413 });
   }
+
   if (outcome.kind === "provider-failed") {
     return NextResponse.json({ error: "Generation failed, please try again." }, { status: 502 });
   }
+
   const { listing, comps } = outcome;
 
   const res = NextResponse.json({ listing, comps, remaining: FREE_LIMIT - used - 1 });
@@ -84,5 +95,6 @@ export async function POST(req: NextRequest) {
     maxAge: 60 * 60 * 24 * 365,
     sameSite: "lax",
   });
+
   return res;
 }

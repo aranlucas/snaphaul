@@ -7,8 +7,8 @@ afterEach(() => {
 });
 
 test("unconfigured eBay comparisons do not make a request", async () => {
-  vi.stubEnv("EBAY_CLIENT_ID", undefined);
-  vi.stubEnv("EBAY_CLIENT_SECRET", undefined);
+  vi.stubEnv("EBAY_CLIENT_ID", "");
+  vi.stubEnv("EBAY_CLIENT_SECRET", "");
   const fetch = vi.spyOn(globalThis, "fetch");
   expect(await getEbayComps("synthetic item")).toBeNull();
   expect(fetch).not.toHaveBeenCalled();
