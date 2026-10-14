@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { getEbayComps } from "../lib/ebay";
+import { getEbayComps } from "@/lib/ebay";
 
 afterEach(() => {
   vi.restoreAllMocks();

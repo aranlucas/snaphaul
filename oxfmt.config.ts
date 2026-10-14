@@ -1,8 +1,8 @@
-import type { OxfmtConfig } from "oxfmt";
-import base from "@aranlucas/oxforge/format-config";
+import base from "@aranlucas/oxforge/format-tailwind";
 
-const config: OxfmtConfig = {
+const config = {
   ...base,
+  sortTailwindcss: { ...base.sortTailwindcss, stylesheet: "app/globals.css" },
 };
 
 export default config;
