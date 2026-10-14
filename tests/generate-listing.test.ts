@@ -5,6 +5,10 @@ import { POST } from "../app/api/generate/route";
 import syntheticImages from "./synthetic-images.json";
 import { generateListing, MAX_IMAGE_BYTES, MAX_REQUEST_BYTES } from "../lib/generate-listing";
 
+type PriceRange = [number, number];
+
+type StreamingRequestOptions = { duplex: string };
+
 // Synthetic 1x1 PNG. No user photos or external services are used in this suite.
 const PNG = syntheticImages.png;
 const image = `data:image/png;base64,${PNG}`;
@@ -16,7 +20,7 @@ const listing = {
   tags: ["test"],
   category: "Test",
   price_suggested: 10,
-  price_range: [5, 15] as [number, number],
+  price_range: [5, 15] as PriceRange,
   price_reasoning: "Test estimate",
   photo_notes: ["Synthetic image"],
 };
@@ -27,19 +31,20 @@ function adapters(overrides: Partial<Dependencies> = {}) {
   const searches: string[] = [];
   const dependencies: Dependencies = {
     models: ["local-first", "local-fallback"],
-    async generate(input) {
+    generate(input) {
       attempts.push(input);
-      return listing;
+      return Promise.resolve(listing);
     },
-    async getComps(title) {
+    getComps(title) {
       searches.push(title);
-      return null;
+      return Promise.resolve(null);
     },
     ...overrides,
   };
   return { dependencies, attempts, searches };
 }
-function request(body: unknown = { marketplace: "ebay", images: [image] }, headers?: HeadersInit) {
+const DEFAULT_BODY = { marketplace: "ebay", images: [image] };
+function request(body: unknown = DEFAULT_BODY, headers?: HeadersInit) {
   return new Request("http://localhost/api/generate", {
     method: "POST",
     headers,
@@ -75,7 +80,7 @@ for (const [name, value] of Object.entries({
 for (const body of [
   { marketplace: "unknown", images: [image] },
   { marketplace: "ebay", images: [] },
-  { marketplace: "ebay", images: Array(6).fill(image) },
+  { marketplace: "ebay", images: Array.from({ length: 6 }, () => image) },
   { marketplace: "ebay", images: [image, "data:image/jpeg,broken"] },
   { marketplace: "ebay", images: [image], notes: "x".repeat(1001) },
   { marketplace: "ebay", images: [10] },
@@ -95,6 +100,7 @@ test("oversized base64 and decoded images are rejected", async () => {
     Buffer.from(PNG, "base64").copy(bytes);
     const { dependencies, attempts } = adapters();
     assert.deepEqual(
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Keep boundary-case requests isolated and avoid concurrent oversized buffers.
       await generateListing(
         request({
           marketplace: "ebay",
@@ -112,6 +118,7 @@ test("invalid JSON and missing bodies are invalid input", async () => {
   for (const body of ["{broken", undefined]) {
     const { dependencies, attempts } = adapters();
     const req = new Request("http://localhost/api/generate", { method: "POST", body });
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Exercise one malformed body at a time with its own adapter.
     assert.deepEqual(await generateListing(req, dependencies), { kind: "invalid-input" });
     assert.equal(attempts.length, 0);
   }
@@ -136,7 +143,7 @@ for (const length of [undefined, "1"]) {
         cancelled = true;
       },
     });
-    const init: RequestInit & { duplex: string } = {
+    const init: RequestInit & StreamingRequestOptions = {
       method: "POST",
       body: stream,
       duplex: "half",
@@ -157,7 +164,7 @@ test("valid images and seller details reach one model as decoded bytes", async (
   const outcome = await generateListing(
     request({
       marketplace: "etsy",
-      images: Array(5).fill(image),
+      images: Array.from({ length: 5 }, () => image),
       brand: "Synthetic brand",
       flaws: "Test scratch",
     }),
@@ -178,10 +185,10 @@ test("fallback reuses validated input and stops after success", async () => {
   const attempts: Parameters<Dependencies["generate"]>[0][] = [];
   const { dependencies } = adapters({
     models: ["fails", "works", "unused"],
-    async generate(input) {
+    generate(input) {
       attempts.push(input);
-      if (input.model === "fails") throw new Error("Mock provider failure");
-      return listing;
+      if (input.model === "fails") return Promise.reject(new Error("Mock provider failure"));
+      return Promise.resolve(listing);
     },
   });
   assert.equal((await generateListing(request(), dependencies)).kind, "generated");
@@ -196,9 +203,9 @@ test("fallback reuses validated input and stops after success", async () => {
 test("all providers failing returns a safe typed error without comparisons", async () => {
   let calls = 0;
   const { dependencies, searches } = adapters({
-    async generate() {
+    generate() {
       calls++;
-      throw new Error("private provider diagnostic");
+      return Promise.reject(new Error("private provider diagnostic"));
     },
   });
   assert.deepEqual(await generateListing(request(), dependencies), { kind: "provider-failed" });
@@ -209,9 +216,9 @@ test("all providers failing returns a safe typed error without comparisons", asy
 test("malformed model output falls back instead of returning an invalid listing", async () => {
   let calls = 0;
   const { dependencies } = adapters({
-    async generate() {
+    generate() {
       calls++;
-      return calls === 1 ? ({} as typeof listing) : listing;
+      return Promise.resolve(calls === 1 ? ({} as typeof listing) : listing);
     },
   });
   assert.equal((await generateListing(request(), dependencies)).kind, "generated");
@@ -220,8 +227,8 @@ test("malformed model output falls back instead of returning an invalid listing"
 
 test("eBay failure keeps a successful listing with explicit absent comparisons", async () => {
   const { dependencies, attempts } = adapters({
-    async getComps() {
-      throw new Error("Mock eBay outage");
+    getComps() {
+      return Promise.reject(new Error("Mock eBay outage"));
     },
   });
   assert.deepEqual(await generateListing(request(), dependencies), {
@@ -235,8 +242,8 @@ test("eBay failure keeps a successful listing with explicit absent comparisons",
 test("successful comparisons are returned unchanged", async () => {
   const comps = { count: 5, median: 10, p25: 5, p75: 15 };
   const { dependencies } = adapters({
-    async getComps() {
-      return comps;
+    getComps() {
+      return Promise.resolve(comps);
     },
   });
   assert.deepEqual(await generateListing(request(), dependencies), {
@@ -322,22 +329,24 @@ function mockProviderEnvironment() {
 test("the route counts one successful generated listing using an offline HTTP adapter", async () => {
   mockProviderEnvironment();
   let calls = 0;
-  vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(() => {
     calls++;
-    return Response.json({
-      id: "synthetic-completion",
-      object: "chat.completion",
-      created: 0,
-      model: "synthetic-local-model",
-      choices: [
-        {
-          index: 0,
-          message: { role: "assistant", content: JSON.stringify(listing) },
-          finish_reason: "stop",
-        },
-      ],
-      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
-    });
+    return Promise.resolve(
+      Response.json({
+        id: "synthetic-completion",
+        object: "chat.completion",
+        created: 0,
+        model: "synthetic-local-model",
+        choices: [
+          {
+            index: 0,
+            message: { role: "assistant", content: JSON.stringify(listing) },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      }),
+    );
   });
   const res = await POST(
     new NextRequest("http://localhost/api/generate", {
@@ -355,9 +364,9 @@ test("the route counts one successful generated listing using an offline HTTP ad
 test("provider failure through the route does not consume allowance or reveal diagnostics", async () => {
   mockProviderEnvironment();
   let calls = 0;
-  vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(() => {
     calls++;
-    throw new Error("synthetic-private-provider-diagnostic");
+    return Promise.reject(new Error("synthetic-private-provider-diagnostic"));
   });
   const res = await POST(
     new NextRequest("http://localhost/api/generate", {

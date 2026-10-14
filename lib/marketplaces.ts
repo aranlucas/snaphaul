@@ -1,3 +1,11 @@
+type SellerDetails = {
+  brand?: string;
+  condition?: string;
+  size?: string;
+  flaws?: string;
+  originalPrice?: string;
+  notes?: string;
+};
 export const MARKETPLACES = ["ebay", "etsy", "poshmark", "mercari"] as const;
 export type Marketplace = (typeof MARKETPLACES)[number];
 
@@ -54,20 +62,10 @@ export const MARKETPLACE_CONFIG: Record<Marketplace, MarketplaceConfig> = {
 
 export const SYSTEM_PROMPT = `You are an expert e-commerce reseller and SEO copywriter who has listed tens of thousands of items across eBay, Etsy, and Poshmark. You identify items from photos with high accuracy, note brands, era, materials, and flaws, and you write listings that sell. You always respond with valid JSON only — no markdown fences, no commentary.`;
 
-export function buildUserPrompt(
-  marketplace: Marketplace,
-  details: {
-    brand?: string;
-    condition?: string;
-    size?: string;
-    flaws?: string;
-    originalPrice?: string;
-    notes?: string;
-  }
-): string {
+export function buildUserPrompt(marketplace: Marketplace, details: SellerDetails): string {
   const cfg = MARKETPLACE_CONFIG[marketplace];
   const detailLines = Object.entries(details)
-    .filter(([, v]) => v && v.trim())
+    .filter(([, v]) => v?.trim())
     .map(([k, v]) => `- ${k}: ${v}`)
     .join("\n");
   const detailsBlock = detailLines

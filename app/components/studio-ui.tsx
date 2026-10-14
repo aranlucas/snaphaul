@@ -1,13 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-export function Icon({
-  name,
-  className = "",
-}: {
+type IconProps = {
   name: "camera" | "arrow" | "plus" | "close" | "copy" | "check" | "refresh" | "image";
   className?: string;
-}) {
+};
+
+export function Icon({ name, className = "" }: IconProps) {
   const paths: Record<typeof name, ReactNode> = {
     camera: (
       <>
@@ -15,11 +14,7 @@ export function Icon({
         <circle cx="12" cy="13" r="4" />
       </>
     ),
-    arrow: (
-      <>
-        <path d="M4 12h16M14 6l6 6-6 6" />
-      </>
-    ),
+    arrow: <path d="M4 12h16M14 6l6 6-6 6" />,
     plus: <path d="M12 5v14M5 12h14" />,
     close: <path d="m6 6 12 12M6 18 18 6" />,
     copy: (
@@ -29,11 +24,7 @@ export function Icon({
       </>
     ),
     check: <path d="m5 12 4 4L19 6" />,
-    refresh: (
-      <>
-        <path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5" />
-      </>
-    ),
+    refresh: <path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5" />,
     image: (
       <>
         <rect x="3" y="3" width="18" height="18" rx="2" />

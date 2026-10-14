@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { z } from "zod";
 import imageCompression from "browser-image-compression";
 import { MARKETPLACE_CONFIG, MARKETPLACES, type Marketplace } from "@/lib/marketplaces";
 import { Brand, Footer, Icon } from "../components/studio-ui";
@@ -19,6 +20,26 @@ type Listing = {
   photo_notes: string[];
 };
 type Comps = { count: number; median: number; p25: number; p75: number };
+const GenerationResponseSchema = z.object({
+  listing: z.object({
+    item_identification: z.string(),
+    title: z.string(),
+    description: z.string(),
+    item_specifics: z.array(z.object({ name: z.string(), value: z.string() })),
+    tags: z.array(z.string()),
+    category: z.string(),
+    price_suggested: z.number(),
+    price_range: z.tuple([z.number(), z.number()]),
+    price_reasoning: z.string(),
+    photo_notes: z.array(z.string()),
+  }),
+  comps: z
+    .object({ count: z.number(), median: z.number(), p25: z.number(), p75: z.number() })
+    .nullish(),
+  remaining: z.number().optional(),
+});
+const GenerationErrorSchema = z.object({ error: z.string().optional() });
+
 type Photo = { id: number; src: string; name: string };
 const EMPTY_DETAILS = {
   brand: "",
@@ -112,6 +133,7 @@ export default function GeneratorPage() {
         break;
       }
       try {
+        // oxlint-disable-next-line eslint/no-await-in-loop -- Compress sequentially to cap memory and preserve the five-photo limit.
         const out = await imageCompression(file, {
           maxSizeMB: 0.4,
           maxWidthOrHeight: 1024,
@@ -119,6 +141,7 @@ export default function GeneratorPage() {
           fileType: "image/jpeg",
         });
         if (out.size > 1024 * 1024) throw new Error("Image could not be reduced");
+        // oxlint-disable-next-line eslint/no-await-in-loop -- Read each compressed photo before processing the next.
         const src = await imageCompression.getDataUrlFromFile(out);
         added.push({ id: ++photoId.current, src, name: file.name });
       } catch {
@@ -141,7 +164,7 @@ export default function GeneratorPage() {
         .filter((f): f is File => f !== null);
       if (files.length) {
         event.preventDefault();
-        void addFiles(files);
+        addFiles(files).catch(() => setUploadError("Couldn’t prepare these photos. Try again."));
       }
     };
     document.addEventListener("paste", onPaste);
@@ -206,18 +229,20 @@ export default function GeneratorPage() {
           ...Object.fromEntries(Object.entries(details).filter(([, value]) => value.trim())),
         }),
       });
-      const data = await res.json();
+      const response: unknown = await res.json();
       if (requestRef.current !== controller || !mounted.current) return;
       if (!res.ok) {
         if (res.status === 429) setRemaining(0);
-        throw new Error(data.error || "Couldn’t generate a draft. Try again.");
+        const failure = GenerationErrorSchema.safeParse(response);
+        throw new Error(
+          failure.success && failure.data.error
+            ? failure.data.error
+            : "Couldn’t generate a draft. Try again.",
+        );
       }
-      if (
-        !data.listing ||
-        typeof data.listing.title !== "string" ||
-        !Array.isArray(data.listing.item_specifics)
-      )
-        throw new Error("The response was incomplete. Try again.");
+      const parsed = GenerationResponseSchema.safeParse(response);
+      if (!parsed.success) throw new Error("The response was incomplete. Try again.");
+      const data = parsed.data;
       setListing(data.listing);
       setListingFor(mp);
       setDraftRevision(sourceRevision);
@@ -327,10 +352,10 @@ export default function GeneratorPage() {
             className="source-panel"
             onSubmit={(event) => {
               event.preventDefault();
-              void generate();
+              generate().catch(() => setError("Couldn’t generate a draft. Try again."));
             }}
           >
-            <fieldset disabled={busy} className="photo-fieldset">
+            <fieldset disabled={busy}>
               <legend className="section-heading">
                 <span>Your photos</span>
                 <span className="count">{photos.length} / 5</span>
@@ -348,7 +373,9 @@ export default function GeneratorPage() {
                 onDrop={(e) => {
                   e.preventDefault();
                   setDragActive(false);
-                  void addFiles(Array.from(e.dataTransfer.files));
+                  addFiles(Array.from(e.dataTransfer.files)).catch(() =>
+                    setUploadError("Couldn’t prepare these photos. Try again."),
+                  );
                 }}
               >
                 {photos.length ? (
@@ -406,7 +433,9 @@ export default function GeneratorPage() {
                     multiple
                     disabled={busy || photos.length === 5}
                     onChange={(e) => {
-                      void addFiles(Array.from(e.target.files ?? []));
+                      addFiles(Array.from(e.target.files ?? [])).catch(() =>
+                        setUploadError("Couldn’t prepare these photos. Try again."),
+                      );
                       e.target.value = "";
                     }}
                   />
@@ -553,7 +582,6 @@ export default function GeneratorPage() {
           >
             {loading && (
               // This live status includes headings, so it uses a flow-content container.
-              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
               <div className="generation-status" role="status">
                 <span className="waiting-mark" aria-hidden="true" />
                 <div>
@@ -662,6 +690,7 @@ export default function GeneratorPage() {
                   </div>
                   <dl className="specifics">
                     {listing.item_specifics.map((s, i) => (
+                      // oxlint-disable-next-line react/no-array-index-key -- Generated specifics are a static read-only list, and names may repeat.
                       <div key={i}>
                         <dt>{s.name}</dt>
                         <dd>{s.value}</dd>
@@ -680,6 +709,7 @@ export default function GeneratorPage() {
                   </div>
                   <ul className="tag-list">
                     {listing.tags.map((t, i) => (
+                      // oxlint-disable-next-line react/no-array-index-key -- Generated tags are not reordered or edited and may repeat.
                       <li key={i}>{t}</li>
                     ))}
                   </ul>
@@ -711,6 +741,7 @@ export default function GeneratorPage() {
                   <p>{listing.item_identification}</p>
                   <ul>
                     {listing.photo_notes.map((n, i) => (
+                      // oxlint-disable-next-line react/no-array-index-key -- Generated notes are not reordered or edited and may repeat.
                       <li key={i}>{n}</li>
                     ))}
                   </ul>

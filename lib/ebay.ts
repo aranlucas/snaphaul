@@ -1,3 +1,7 @@
+import { z } from "zod";
+
+type TokenCache = { token: string; expiresAt: number };
+
 // Real pricing comps from eBay's Browse API. Activates only when
 // EBAY_CLIENT_ID / EBAY_CLIENT_SECRET are set; callers get null otherwise.
 // These are asking prices of similar live listings — labeled honestly in the UI,
@@ -10,7 +14,14 @@ type Comps = {
   p75: number;
 };
 
-let tokenCache: { token: string; expiresAt: number } | null = null;
+let tokenCache: TokenCache | null = null;
+
+const TokenResponseSchema = z.object({ access_token: z.string(), expires_in: z.number() });
+const SearchResponseSchema = z.object({
+  itemSummaries: z
+    .array(z.object({ price: z.object({ value: z.string().optional() }).optional() }))
+    .optional(),
+});
 
 async function getToken(): Promise<string | null> {
   const id = process.env.EBAY_CLIENT_ID;
@@ -27,7 +38,7 @@ async function getToken(): Promise<string | null> {
     body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
   });
   if (!res.ok) return null;
-  const data = await res.json();
+  const data = TokenResponseSchema.parse(await res.json());
   tokenCache = {
     token: data.access_token,
     expiresAt: Date.now() + (data.expires_in - 60) * 1000,
@@ -54,11 +65,11 @@ export async function getEbayComps(query: string): Promise<Comps | null> {
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
-    const data = await res.json();
+    const data = SearchResponseSchema.parse(await res.json());
     const prices: number[] = (data.itemSummaries ?? [])
-      .map((i: { price?: { value?: string } }) => Number(i.price?.value))
+      .map((i) => Number(i.price?.value))
       .filter((n: number) => Number.isFinite(n) && n > 0)
-      .sort((a: number, b: number) => a - b);
+      .toSorted((a: number, b: number) => a - b);
     if (prices.length < 5) return null;
     return {
       count: prices.length,
