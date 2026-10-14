@@ -79,5 +79,10 @@
   },
   "options": {
     "typeAware": true
+  },
+  "settings": {
+    "tailwindcss": {
+      "entryPoint": "app/globals.css"
+    }
   }
 }

@@ -61,10 +61,12 @@ async function readBody(request: Request): Promise<unknown> {
   let size = 0;
   try {
     while (true) {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Stream reads must stay ordered and bounded by the request-size limit.
       const { value, done } = await reader.read();
       if (done) break;
       size += value.byteLength;
       if (size > MAX_REQUEST_BYTES) {
+        // oxlint-disable-next-line eslint/no-await-in-loop -- Stop the current oversized stream before throwing.
         await reader.cancel().catch(() => undefined);
         throw new PayloadTooLarge();
       }
@@ -133,12 +135,14 @@ export async function generateListing(
   for (const model of dependencies.models) {
     let listing;
     try {
+      // oxlint-disable-next-line eslint/no-await-in-loop -- Try fallback providers sequentially; do not charge for parallel generations.
       listing = ListingSchema.parse(await dependencies.generate({ model, prompt, images }));
     } catch {
       continue;
     }
     // Provider diagnostics may contain input or credentials. Keep them out of
     // client errors; likewise, never echo invalid photo data in validation errors.
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Fetch optional comparisons only for the first successful provider.
     const comps = await dependencies.getComps(listing.title).catch(() => null);
     return { kind: "generated", listing, comps };
   }

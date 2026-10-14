@@ -42,7 +42,7 @@ export default function Home() {
             <p className="fine">Free beta · No account needed</p>
           </div>
         </section>
-        <section className="transformation wrap" id="example" aria-labelledby="example-heading">
+        <section className="wrap" id="example" aria-labelledby="example-heading">
           <div className="example-heading">
             <h2 id="example-heading">One item. A fresh start.</h2>
             <span className="example-label">Illustrative example</span>
