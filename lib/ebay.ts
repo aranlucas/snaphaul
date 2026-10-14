@@ -17,6 +17,7 @@ type Comps = {
 let tokenCache: TokenCache | null = null;
 
 const TokenResponseSchema = z.object({ access_token: z.string(), expires_in: z.number() });
+
 const SearchResponseSchema = z.object({
   itemSummaries: z
     .array(z.object({ price: z.object({ value: z.string().optional() }).optional() }))
@@ -26,8 +27,14 @@ const SearchResponseSchema = z.object({
 async function getToken(): Promise<string | null> {
   const id = process.env.EBAY_CLIENT_ID;
   const secret = process.env.EBAY_CLIENT_SECRET;
-  if (!id || !secret) return null;
-  if (tokenCache && Date.now() < tokenCache.expiresAt) return tokenCache.token;
+
+  if (!id || !secret) {
+    return null;
+  }
+
+  if (tokenCache && Date.now() < tokenCache.expiresAt) {
+    return tokenCache.token;
+  }
 
   const res = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
     method: "POST",
@@ -37,23 +44,33 @@ async function getToken(): Promise<string | null> {
     },
     body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
   });
-  if (!res.ok) return null;
+
+  if (!res.ok) {
+    return null;
+  }
+
   const data = TokenResponseSchema.parse(await res.json());
   tokenCache = {
     token: data.access_token,
     expiresAt: Date.now() + (data.expires_in - 60) * 1000,
   };
+
   return tokenCache.token;
 }
 
 function percentile(sorted: number[], p: number): number {
   const idx = Math.min(sorted.length - 1, Math.max(0, Math.round((p / 100) * (sorted.length - 1))));
+
   return sorted[idx];
 }
 
 export async function getEbayComps(query: string): Promise<Comps | null> {
   const token = await getToken();
-  if (!token) return null;
+
+  if (!token) {
+    return null;
+  }
+
   try {
     const url = new URL("https://api.ebay.com/buy/browse/v1/item_summary/search");
     url.searchParams.set("q", query.slice(0, 90));
@@ -64,13 +81,22 @@ export async function getEbayComps(query: string): Promise<Comps | null> {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(8000),
     });
-    if (!res.ok) return null;
+
+    if (!res.ok) {
+      return null;
+    }
+
     const data = SearchResponseSchema.parse(await res.json());
+
     const prices: number[] = (data.itemSummaries ?? [])
       .map((i) => Number(i.price?.value))
       .filter((n: number) => Number.isFinite(n) && n > 0)
       .toSorted((a: number, b: number) => a - b);
-    if (prices.length < 5) return null;
+
+    if (prices.length < 5) {
+      return null;
+    }
+
     return {
       count: prices.length,
       median: percentile(prices, 50),

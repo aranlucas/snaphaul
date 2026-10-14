@@ -623,14 +623,16 @@ legend {
 .photo-frame:first-child {
   grid-column: 1 / -1;
 }
+.photo-preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+}
 .photo-frame img {
   display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
   object-fit: contain;
   background: var(--soft);
 }
-.photo-frame:not(:first-child) img {
+.photo-frame:not(:first-child) .photo-preview {
   aspect-ratio: 1.4;
 }
 .photo-frame figcaption {
