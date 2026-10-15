@@ -12,7 +12,8 @@
     "format:check": "oxfmt --check",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "husky"
   },
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^3.1.0",
@@ -32,7 +33,9 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.2",
+    "husky": "^9.1.7",
     "jsdom": "^30.1.2",
+    "lint-staged": "^17.6.0",
     "oxfmt": "^0.73.0",
     "oxlint": "^1.88.0",
     "oxlint-tailwindcss": "^1.16.0",
@@ -41,5 +44,14 @@
     "tailwindcss": "^4",
     "typescript": "^7.0.2",
     "vitest": "^5.0.4"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": [
+      "oxlint --fix",
+      "oxfmt --no-error-on-unmatched-pattern"
+    ],
+    "*.{json,jsonc,json5,css,scss,md,mdx,yml,yaml,html,toml,vue,graphql}": [
+      "oxfmt --no-error-on-unmatched-pattern"
+    ]
   }
 }
