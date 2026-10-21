@@ -28,7 +28,6 @@ jobs:
         with:
           cache: true
           require-lockfile: true
-          version: 12.8.1
           node-version-file: .node-version
 
       - parallel:
