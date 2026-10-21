@@ -9,7 +9,7 @@ test("leaving the photo drop zone for a non-DOM target clears its active state",
   expect(sheet).toBeInstanceOf(HTMLElement);
 
   if (!(sheet instanceof HTMLElement)) {
-    throw new Error("Missing photo drop zone");
+    throw new TypeError("Missing photo drop zone");
   }
 
   fireEvent.dragOver(sheet);
@@ -26,7 +26,7 @@ test("moving within the photo drop zone keeps its active state", () => {
   const sheet = chooser.closest(".contact-sheet");
 
   if (!(sheet instanceof HTMLElement)) {
-    throw new Error("Missing photo drop zone");
+    throw new TypeError("Missing photo drop zone");
   }
 
   fireEvent.dragOver(sheet);
