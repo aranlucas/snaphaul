@@ -4,7 +4,7 @@ Planning baseline: `6c5373e21edf` on `origin/main`, 2026-10-26. This is a propos
 
 ## Outcome
 
-Let a reseller finish and reuse an accurate listing draft with less repetitive editing. The [current beta](README.md) generates marketplace-specific text from photos, supports copy actions and optional asking-price comparisons, and does not retain listing history or publish listings.
+Let a reseller finish and reuse an accurate listing draft with less repetitive editing. See the [README](README.md) for current beta capabilities and limits.
 
 ## 1. Save and resume a reviewed draft
 
@@ -32,4 +32,4 @@ Add an item queue with per-item progress and retries only after saved drafts pro
 
 ## Boundaries
 
-Defer marketplace publishing, payment plans and inventory integrations until repeat use establishes demand. Asking-price comparisons are not completed-sale valuations or guaranteed prices. Seller review remains required for condition, authenticity and marketplace rules. Use the existing generation contract, native storage/library capabilities and test runner; avoid a new orchestration service for this first release.
+Defer marketplace publishing, payment plans and inventory integrations until repeat use establishes demand. Asking-price comparisons are not completed-sale valuations or guaranteed prices. Seller review remains required for condition, authenticity and marketplace rules.
