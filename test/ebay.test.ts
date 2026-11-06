@@ -37,3 +37,24 @@ test("malformed comparison responses return no comparisons", async () => {
     .mockResolvedValueOnce(Response.json({ itemSummaries: "not an array" }));
   expect(await getEbayComps("synthetic item")).toBeNull();
 });
+
+for (const failure of [
+  new Error("OAuth unavailable"),
+  Response.json({ access_token: 123, expires_in: "invalid" }),
+  new Response(null, { status: 503 }),
+]) {
+  test(`OAuth failure leaves comparisons absent: ${failure instanceof Error ? failure.message : failure.status}`, async () => {
+    vi.stubEnv("EBAY_CLIENT_ID", "synthetic-id");
+    vi.stubEnv("EBAY_CLIENT_SECRET", "synthetic-secret");
+    const fetch = vi.spyOn(globalThis, "fetch");
+
+    if (failure instanceof Error) {
+      fetch.mockRejectedValueOnce(failure);
+    } else {
+      fetch.mockResolvedValueOnce(failure);
+    }
+
+    expect(await getEbayComps("synthetic item")).toBeNull();
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+}

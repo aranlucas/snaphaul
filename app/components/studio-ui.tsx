@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 type IconProps = {
-  name: "camera" | "arrow" | "plus" | "close" | "copy" | "check" | "refresh" | "image";
+  name: "camera" | "arrow" | "plus" | "close" | "copy" | "check" | "refresh";
   className?: string;
 };
 
@@ -25,13 +25,6 @@ export function Icon({ name, className = "" }: IconProps) {
     ),
     check: <path d="m5 12 4 4L19 6" />,
     refresh: <path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5" />,
-    image: (
-      <>
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <circle cx="8" cy="8" r="1" />
-        <path d="m3 17 6-6 4 4 3-3 5 5" />
-      </>
-    ),
   };
 
   return (

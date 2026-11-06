@@ -3,7 +3,8 @@ import { afterEach, test, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "@/app/api/generate/route";
 import syntheticImages from "@test/synthetic-images.json";
-import { generateListing, MAX_IMAGE_BYTES, MAX_REQUEST_BYTES } from "@/lib/generate-listing";
+import { MAX_IMAGE_BYTES } from "@/lib/listing-contract";
+import { generateListing, MAX_REQUEST_BYTES } from "@/lib/generate-listing";
 
 type Dependencies = Parameters<typeof generateListing>[1];
 

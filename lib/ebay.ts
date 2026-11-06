@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Comps } from "./listing-contract";
 
 type TokenCache = { token: string; expiresAt: number };
 
@@ -6,13 +7,6 @@ type TokenCache = { token: string; expiresAt: number };
 // EBAY_CLIENT_ID / EBAY_CLIENT_SECRET are set; callers get null otherwise.
 // These are asking prices of similar live listings — labeled honestly in the UI,
 // not claimed as sold prices.
-
-type Comps = {
-  count: number;
-  median: number;
-  p25: number;
-  p75: number;
-};
 
 let tokenCache: TokenCache | null = null;
 
@@ -43,6 +37,7 @@ async function getToken(): Promise<string | null> {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
+    signal: AbortSignal.timeout(8000),
   });
 
   if (!res.ok) {
@@ -65,13 +60,13 @@ function percentile(sorted: number[], p: number): number {
 }
 
 export async function getEbayComps(query: string): Promise<Comps | null> {
-  const token = await getToken();
-
-  if (!token) {
-    return null;
-  }
-
   try {
+    const token = await getToken();
+
+    if (!token) {
+      return null;
+    }
+
     const url = new URL("https://api.ebay.com/buy/browse/v1/item_summary/search");
     url.searchParams.set("q", query.slice(0, 90));
     url.searchParams.set("limit", "40");

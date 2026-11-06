@@ -6,42 +6,21 @@ import Image from "next/image";
 import { keyedValues } from "@/lib/listing-keys";
 import { z } from "zod";
 import imageCompression from "browser-image-compression";
-import { MARKETPLACE_CONFIG, MARKETPLACES, type Marketplace } from "@/lib/marketplaces";
+import {
+  MARKETPLACE_CONFIG,
+  MARKETPLACES,
+  SellerDetailsSchema,
+  type Marketplace,
+} from "@/lib/marketplaces";
+import {
+  GenerationResponseSchema,
+  MAX_PHOTOS,
+  MAX_IMAGE_BYTES,
+  IMAGE_MEDIA_TYPES,
+  type Listing,
+  type Comps,
+} from "@/lib/listing-contract";
 import { Brand, Footer, Icon } from "../components/studio-ui";
-
-type Listing = {
-  item_identification: string;
-  title: string;
-  description: string;
-  item_specifics: { name: string; value: string }[];
-  tags: string[];
-  category: string;
-  price_suggested: number;
-  price_range: [number, number];
-  price_reasoning: string;
-  photo_notes: string[];
-};
-
-type Comps = { count: number; median: number; p25: number; p75: number };
-
-const GenerationResponseSchema = z.object({
-  listing: z.object({
-    item_identification: z.string(),
-    title: z.string(),
-    description: z.string(),
-    item_specifics: z.array(z.object({ name: z.string(), value: z.string() })),
-    tags: z.array(z.string()),
-    category: z.string(),
-    price_suggested: z.number(),
-    price_range: z.tuple([z.number(), z.number()]),
-    price_reasoning: z.string(),
-    photo_notes: z.array(z.string()),
-  }),
-  comps: z
-    .object({ count: z.number(), median: z.number(), p25: z.number(), p75: z.number() })
-    .nullish(),
-  remaining: z.number().optional(),
-});
 
 const GenerationErrorSchema = z.object({ error: z.string().optional() });
 
@@ -55,8 +34,6 @@ const EMPTY_DETAILS = {
   originalPrice: "",
   notes: "",
 };
-
-const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
@@ -132,10 +109,10 @@ export default function GeneratorPage() {
     setNotice("");
     const errors: string[] = [];
     const added: Photo[] = [];
-    const available = 5 - photosRef.current.length;
+    const available = MAX_PHOTOS - photosRef.current.length;
 
     for (const file of files) {
-      if (!ACCEPTED.includes(file.type)) {
+      if (!IMAGE_MEDIA_TYPES.includes(file.type)) {
         errors.push(`${file.name}: use JPEG, PNG, WebP or GIF.`);
         continue;
       }
@@ -159,7 +136,7 @@ export default function GeneratorPage() {
           fileType: "image/jpeg",
         });
 
-        if (out.size > 1024 * 1024) {
+        if (out.size > MAX_IMAGE_BYTES) {
           throw new Error("Image could not be reduced");
         }
 
@@ -514,7 +491,7 @@ export default function GeneratorPage() {
                   </div>
                 )}
                 <label
-                  className={`upload-button button ${busy || photos.length === 5 ? "is-disabled" : ""}`}
+                  className={`upload-button button ${busy || photos.length === MAX_PHOTOS ? "is-disabled" : ""}`}
                 >
                   <Icon name="plus" />
                   {uploading
@@ -525,9 +502,9 @@ export default function GeneratorPage() {
                   <input
                     ref={fileRef}
                     type="file"
-                    accept={ACCEPTED.join(",")}
+                    accept={IMAGE_MEDIA_TYPES.join(",")}
                     multiple
-                    disabled={busy || photos.length === 5}
+                    disabled={busy || photos.length === MAX_PHOTOS}
                     onChange={(e) => {
                       addFiles(Array.from(e.target.files ?? [])).catch(() =>
                         setUploadError("Couldn’t prepare these photos. Try again."),
@@ -591,14 +568,14 @@ export default function GeneratorPage() {
               <fieldset disabled={busy} className="detail-grid">
                 {(
                   [
-                    ["brand", "Brand", "e.g. Levi’s", 200],
-                    ["condition", "Condition", "e.g. Gently used", 200],
-                    ["size", "Size / measurements", "e.g. M, 22 in pit to pit", 200],
-                    ["originalPrice", "Original price", "e.g. $90 USD", 50],
-                    ["flaws", "Flaws or wear", "Be specific about marks or damage", 500],
-                    ["notes", "Anything else", "Material, age, what’s included…", 1000],
+                    ["brand", "Brand", "e.g. Levi’s"],
+                    ["condition", "Condition", "e.g. Gently used"],
+                    ["size", "Size / measurements", "e.g. M, 22 in pit to pit"],
+                    ["originalPrice", "Original price", "e.g. $90 USD"],
+                    ["flaws", "Flaws or wear", "Be specific about marks or damage"],
+                    ["notes", "Anything else", "Material, age, what’s included…"],
                   ] as const
-                ).map(([key, label, placeholder, max]) => (
+                ).map(([key, label, placeholder]) => (
                   <label
                     className={key === "flaws" || key === "notes" ? "field field-wide" : "field"}
                     key={key}
@@ -606,7 +583,7 @@ export default function GeneratorPage() {
                     <span>{label}</span>
                     <input
                       placeholder={placeholder}
-                      maxLength={max}
+                      maxLength={SellerDetailsSchema.shape[key].unwrap().maxLength ?? undefined}
                       value={details[key]}
                       onChange={(e) => {
                         setDetails((prev) => ({ ...prev, [key]: e.target.value }));
@@ -677,7 +654,6 @@ export default function GeneratorPage() {
             aria-busy={loading}
           >
             {loading && (
-              // This live status includes headings, so it uses a flow-content container.
               <div className="generation-status" role="status">
                 <span className="waiting-mark" aria-hidden="true" />
                 <div>
