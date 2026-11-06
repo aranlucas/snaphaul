@@ -74,7 +74,9 @@ test("seller prepares, edits and copies a draft, recovers from failure, then cle
     "Edited jacket title",
   );
   await screen.getByRole("button", "Generate a new draft").tap();
-  await expect(screen.getByRole("alert")).toContainText("Generation failed, please try again.");
+  await expect(
+    screen.getByRole("alert").filter({ hasText: "Generation failed, please try again." }),
+  ).toContainText("Generation failed, please try again.");
   await expect(screen.getByLabel("Title Editable")).toHaveValue("Edited jacket title");
   await screen.getByRole("button", "Try again", { exact: true }).tap();
   await expect(screen.getByText("8 of 10 generations left")).toBeVisible();

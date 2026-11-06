@@ -95,3 +95,10 @@ regression. Lint stopped subsequent build/browser/proof stages: new tests needed
 statement spacing and safe parsed JSON/error/session types. Corrected those test
 issues without weakening assertions. Production build/browser/proof remain pending.
 Vercel reports an account block and is excluded under the user policy.
+
+CI run [42307307733](https://github.com/aranlucas/snaphaul/actions/runs/42307307733)
+passed 58 tests, lint, typecheck, formatting, all five pre-fix failure checks and
+the production build. Browser trace/video showed upload, request validation,
+generation, edit and copy succeeding, then a test-only ambiguous alert locator
+on the intentional 502 response. Scoped that locator by its expected error text;
+retained the assertion and all later recovery/reset checks. Browser rerun pending.
