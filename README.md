@@ -76,6 +76,9 @@ and their acceptance criteria are in the [roadmap](ROADMAP.md).
 
 `pnpm test` runs Vitest tests in Node and jsdom with synthetic images and mocked
 model/comparison adapters; no OpenRouter or eBay requests are needed. CI runs
-tests, `pnpm typecheck`, `pnpm lint`, and `pnpm format:check`. `pnpm build` builds
-the production app separately. Failed generation or invalid input does not update
+tests, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, a production build,
+and `pnpm test:e2e`. The pinned tester-army/e2e web journey uses synthetic photos,
+controlled API responses and clipboard fixtures without model credentials. CI
+uploads browser failure evidence and verifies the new regressions fail against
+the pre-audit route. Failed generation or invalid input does not update
 the cookie allowance; only a successfully generated listing is counted.

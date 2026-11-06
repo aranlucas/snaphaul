@@ -43,3 +43,6 @@ next-env.d.ts
 # Local visual QA captures
 /output/
 /.impeccable/review/
+
+# e2e reports and browser evidence
+/.e2e/

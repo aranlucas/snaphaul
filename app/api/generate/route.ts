@@ -27,8 +27,10 @@ export async function POST(req: NextRequest) {
   // Advisory per-browser allowance, not abuse protection: cookies can be cleared
   // or changed and parallel requests can share a count. A hard budget needs a
   // durable, atomic server-owned store and a defined anonymous identity policy.
-  const sid = req.cookies.get("sh_session")?.value ?? crypto.randomUUID();
-  const used = Number(req.cookies.get(`sh_used_${sid}`)?.value ?? 0);
+  const session = req.cookies.get("sh_session")?.value;
+  const sid = session && /^[A-Za-z0-9_-]{1,128}$/.test(session) ? session : crypto.randomUUID();
+  const count = Number(req.cookies.get(`sh_used_${sid}`)?.value ?? 0);
+  const used = Number.isSafeInteger(count) && count >= 0 ? count : 0;
 
   if (used >= FREE_LIMIT) {
     return NextResponse.json(
@@ -62,6 +64,9 @@ export async function POST(req: NextRequest) {
         temperature: 0.7,
         maxOutputTokens: 2000,
         maxRetries: 0,
+        // Four attempts plus up to 16 seconds of optional eBay work fit within
+        // the 60-second route budget, leaving time to validate and serialize.
+        abortSignal: AbortSignal.timeout(9000),
       });
 
       return result.object;
