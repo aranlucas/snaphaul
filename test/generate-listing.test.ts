@@ -424,3 +424,98 @@ test("provider failure through the route does not consume allowance or reveal di
   assert.deepEqual(await res.json(), { error: "Generation failed, please try again." });
   assert.ok(calls > 0);
 });
+
+for (const count of ["broken", "-2", "1.5", "Infinity"]) {
+  test(`malformed usage cookie ${count} still returns a usable listing`, async () => {
+    mockProviderEnvironment();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      Response.json({
+        choices: [
+          {
+            index: 0,
+            message: { role: "assistant", content: JSON.stringify(listing) },
+            finish_reason: "stop",
+          },
+        ],
+      }),
+    );
+    const res = await POST(
+      new NextRequest("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify(DEFAULT_BODY),
+        headers: { Cookie: `sh_session=synthetic; sh_used_synthetic=${count}` },
+      }),
+    );
+    assert.equal(res.status, 200);
+    assert.deepEqual(await res.json(), { listing, comps: null, remaining: 9 });
+    assert.equal(res.cookies.get("sh_used_synthetic")?.value, "1");
+  });
+}
+
+test("stalled model is aborted and a fallback produces the listing", async () => {
+  mockProviderEnvironment();
+  let calls = 0;
+  let aborted = false;
+  vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => {
+    calls++;
+    if (calls === 1) {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener(
+          "abort",
+          () => {
+            aborted = true;
+            reject(init.signal?.reason);
+          },
+          { once: true },
+        );
+      });
+    }
+    return Promise.resolve(
+      Response.json({
+        choices: [
+          {
+            index: 0,
+            message: { role: "assistant", content: JSON.stringify(listing) },
+            finish_reason: "stop",
+          },
+        ],
+      }),
+    );
+  });
+  const res = await POST(
+    new NextRequest("http://localhost/api/generate", {
+      method: "POST",
+      body: JSON.stringify(DEFAULT_BODY),
+    }),
+  );
+  assert.equal(aborted, true);
+  assert.equal(calls, 2);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { listing, comps: null, remaining: 9 });
+}, 14000);
+
+test("an unsafe session cookie is replaced before setting response cookies", async () => {
+  mockProviderEnvironment();
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    Response.json({
+      choices: [
+        {
+          index: 0,
+          message: { role: "assistant", content: JSON.stringify(listing) },
+          finish_reason: "stop",
+        },
+      ],
+    }),
+  );
+  const res = await POST(
+    new NextRequest("http://localhost/api/generate", {
+      method: "POST",
+      body: JSON.stringify(DEFAULT_BODY),
+      headers: { Cookie: "sh_session=bad%20session" },
+    }),
+  );
+  assert.equal(res.status, 200);
+  const sid = res.cookies.get("sh_session")?.value;
+  assert.match(sid ?? "", /^[A-Za-z0-9_-]{1,128}$/);
+  assert.equal(res.cookies.get(`sh_used_${sid}`)?.value, "1");
+});

@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Set up pnpm, Node.js, and dependencies
         uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
@@ -44,3 +45,42 @@ jobs:
 
           - name: Test
             run: pnpm test
+
+      - name: Prove regressions reject the pre-audit route
+        run: |
+          cp app/api/generate/route.ts /tmp/fixed-route.ts
+          trap 'cp /tmp/fixed-route.ts app/api/generate/route.ts' EXIT
+          git show 7b5a582a13a6e25daf59b4576d88735b13a3d6a9:app/api/generate/route.ts > app/api/generate/route.ts
+          if pnpm exec vitest run test/generate-listing.test.ts -t 'malformed usage cookie|stalled model' --reporter=json --outputFile=/tmp/regression-proof.json; then
+            echo 'Regressions unexpectedly passed against the defective route'
+            exit 1
+          fi
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const report = JSON.parse(readFileSync('/tmp/regression-proof.json', 'utf8'));
+          const failures = report.testResults.flatMap(file => file.assertionResults).filter(test => /malformed usage cookie|stalled model/.test(test.fullName));
+          assert.equal(failures.length, 5, 'All five targeted regression tests must execute');
+          assert.ok(failures.every(test => test.status === 'failed'), 'Each regression must fail against the old route');
+          assert.ok(failures.every(test => test.failureMessages.length > 0));
+          console.log(failures.map(test => ({ name: test.fullName, failures: test.failureMessages })));
+          JS
+
+      - name: Build production app
+        run: pnpm build
+
+      - name: Install Chromium
+        run: pnpm exec e2e-web install chromium --with-deps
+
+      - name: Browser journeys (offline fixtures, no model credentials)
+        run: pnpm test:e2e
+
+      - name: Upload browser failure evidence and reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-evidence
+          path: .e2e
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
