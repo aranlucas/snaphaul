@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { generateObject } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { SYSTEM_PROMPT } from "../../../lib/marketplaces";
-import { generateListing, ListingSchema } from "../../../lib/generate-listing";
+import { ListingSchema } from "../../../lib/listing-contract";
+import { generateListing } from "../../../lib/generate-listing";
 import { getEbayComps } from "../../../lib/ebay";
 
 export const runtime = "nodejs";
@@ -13,16 +14,14 @@ export const maxDuration = 60;
 const FREE_LIMIT = 10;
 
 // Free vision models rotate in/out of OpenRouter's free tier; try in order.
-const MODELS = (
-  process.env.OPENROUTER_MODEL
-    ? [process.env.OPENROUTER_MODEL]
-    : [
-        "google/gemma-4-31b-it:free",
-        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-        "nvidia/nemotron-nano-12b-v2-vl:free",
-        "google/gemma-4-26b-a4b-it:free",
-      ]
-).filter((m, i, arr) => arr.indexOf(m) === i);
+const MODELS = process.env.OPENROUTER_MODEL
+  ? [process.env.OPENROUTER_MODEL]
+  : [
+      "google/gemma-4-31b-it:free",
+      "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "nvidia/nemotron-nano-12b-v2-vl:free",
+      "google/gemma-4-26b-a4b-it:free",
+    ];
 
 export async function POST(req: NextRequest) {
   // Advisory per-browser allowance, not abuse protection: cookies can be cleared

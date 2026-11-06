@@ -1,18 +1,21 @@
-type SellerDetails = {
-  brand?: string;
-  condition?: string;
-  size?: string;
-  flaws?: string;
-  originalPrice?: string;
-  notes?: string;
-};
+import { z } from "zod";
+
+export const SellerDetailsSchema = z.object({
+  brand: z.string().max(200).optional(),
+  condition: z.string().max(200).optional(),
+  size: z.string().max(200).optional(),
+  flaws: z.string().max(500).optional(),
+  originalPrice: z.string().max(50).optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+type SellerDetails = z.infer<typeof SellerDetailsSchema>;
 
 export const MARKETPLACES = ["ebay", "etsy", "poshmark", "mercari"] as const;
 
 export type Marketplace = (typeof MARKETPLACES)[number];
 
 type MarketplaceConfig = {
-  id: Marketplace;
   name: string;
   titleLimit: number;
   guidance: string;
@@ -20,41 +23,37 @@ type MarketplaceConfig = {
 
 export const MARKETPLACE_CONFIG: Record<Marketplace, MarketplaceConfig> = {
   ebay: {
-    id: "ebay",
     name: "eBay",
     titleLimit: 80,
     guidance: `eBay best practices:
-- Title max 80 chars, front-load the most searched keywords (brand, item type, size, color, model number).
+- Title: front-load the most searched keywords (brand, item type, size, color, model number).
 - Use ALL relevant keywords buyers search for; no marketing fluff, no ALL CAPS words, no punctuation stuffing.
 - Item specifics should mirror eBay's required fields (Brand, Type, Color, Size, Material, Condition, etc.).
 - Description: factual, scannable, short paragraphs or bullets covering condition, measurements, flaws, shipping. No HTML.
 - Suggest the most likely eBay leaf category.`,
   },
   etsy: {
-    id: "etsy",
     name: "Etsy",
     titleLimit: 140,
     guidance: `Etsy best practices:
-- Title max 140 chars, long-tail keyword phrases buyers actually search, most important keywords first.
+- Title: long-tail keyword phrases buyers actually search, most important keywords first.
 - 13 tags of up to 20 chars each, multi-word long-tail phrases, no repeated single words.
 - Description: warm and human but keyword-rich first paragraph (Etsy indexes it), then details, measurements, condition, care.
 - Only suggest this fits Etsy if the item is vintage (20+ years), handmade, or a craft supply; note this in category.`,
   },
   poshmark: {
-    id: "poshmark",
     name: "Poshmark",
     titleLimit: 50,
     guidance: `Poshmark best practices:
-- Title max 50 chars: Brand + Item Type + Size + Key Attribute (color/style).
+- Title: Brand + Item Type + Size + Key Attribute (color/style).
 - Description: casual, emoji-friendly, hashtag-heavy (Poshmark rewards hashtags); include brand, size, measurements, condition, styling suggestions.
 - Tags should be Poshmark-style hashtags without the # symbol, each under 25 chars.`,
   },
   mercari: {
-    id: "mercari",
     name: "Mercari",
     titleLimit: 80,
     guidance: `Mercari best practices:
-- Title max 80 chars: Brand + Item Type + Size/Model + Key Attributes (color, style). Keyword-rich, no filler.
+- Title: Brand + Item Type + Size/Model + Key Attributes (color, style). Keyword-rich, no filler.
 - Description: friendly and detailed — condition, measurements, flaws, what's included, bundle/offer welcome note. Buyers negotiate heavily on Mercari, so mention you're open to offers.
 - End the description with up to 5 relevant hashtags (with # symbol).
 - Item specifics mirror Mercari's fields (Brand, Size, Color, Condition, Category).
@@ -82,19 +81,7 @@ ${detailsBlock}
 
 ${cfg.guidance}
 
-Respond with JSON in exactly this schema:
-{
-  "item_identification": "what the item is, including identified brand/model/era and how confident you are",
-  "title": "string within ${cfg.titleLimit} characters",
-  "description": "full listing description",
-  "item_specifics": [{"name": "string", "value": "string"}],
-  "tags": ["string"],
-  "category": "suggested category path",
-  "price_suggested": number,
-  "price_range": [number, number],
-  "price_reasoning": "short reasoning based on brand, condition, and typical resale value",
-  "photo_notes": ["notable details or flaws visible in the photos"]
-}
+Follow the supplied output schema. Keep the title within ${cfg.titleLimit} characters.
 
 Rules:
 - Currency USD. If unsure of exact value, widen the range and say so in price_reasoning.

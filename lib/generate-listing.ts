@@ -1,32 +1,18 @@
 import { z } from "zod";
-import { MARKETPLACES, buildUserPrompt } from "./marketplaces";
-
-// The browser currently sends <= 0.4 MiB JPEGs. Leave headroom for other clients
-// while bounding both the wire payload and each decoded image before model work.
-export const MAX_IMAGE_BYTES = 1024 * 1024;
+import { MARKETPLACES, buildUserPrompt, SellerDetailsSchema } from "./marketplaces";
+import {
+  ListingSchema,
+  MAX_IMAGE_BYTES,
+  MAX_PHOTOS,
+  IMAGE_MEDIA_TYPES,
+  type Listing,
+  type Comps,
+} from "./listing-contract";
 
 export const MAX_REQUEST_BYTES = 8 * 1024 * 1024;
-
 const MAX_BASE64_LENGTH = 4 * Math.ceil(MAX_IMAGE_BYTES / 3);
 
-export const ListingSchema = z.object({
-  item_identification: z.string(),
-  title: z.string(),
-  description: z.string(),
-  item_specifics: z.array(z.object({ name: z.string(), value: z.string() })),
-  tags: z.array(z.string()),
-  category: z.string(),
-  price_suggested: z.number(),
-  price_range: z.tuple([z.number(), z.number()]),
-  price_reasoning: z.string(),
-  photo_notes: z.array(z.string()),
-});
-
-type Listing = z.infer<typeof ListingSchema>;
-
 type Image = { data: Uint8Array; mediaType: string };
-
-type Comps = { count: number; median: number; p25: number; p75: number };
 
 type GenerationDependencies = {
   models: readonly string[];
@@ -40,18 +26,12 @@ type GenerationOutcome =
   | { kind: "provider-failed" }
   | { kind: "generated"; listing: Listing; comps: Comps | null };
 
-const RequestSchema = z.object({
+const RequestSchema = SellerDetailsSchema.extend({
   marketplace: z.enum(MARKETPLACES),
   images: z
     .array(z.string().max(MAX_BASE64_LENGTH + 32))
     .min(1)
-    .max(5),
-  brand: z.string().max(200).optional(),
-  condition: z.string().max(200).optional(),
-  size: z.string().max(200).optional(),
-  flaws: z.string().max(500).optional(),
-  originalPrice: z.string().max(50).optional(),
-  notes: z.string().max(1000).optional(),
+    .max(MAX_PHOTOS),
 });
 
 class PayloadTooLarge extends Error {}
@@ -100,9 +80,9 @@ async function readBody(request: Request): Promise<ListingRequest> {
 function decodeImage(url: string): Image {
   const comma = url.indexOf(",");
   const header = url.slice(0, comma);
-  const match = /^data:(image\/(?:jpeg|png|webp|gif));base64$/.exec(header);
+  const match = /^data:([^;,]+);base64$/.exec(header);
 
-  if (!match) {
+  if (!match || !IMAGE_MEDIA_TYPES.includes(match[1])) {
     throw new Error("Unsupported image data URL");
   }
 
