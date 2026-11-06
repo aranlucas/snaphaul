@@ -88,3 +88,10 @@ Independent review identified shallow checkout preventing baseline proof; fixed
 with full history. It also requested verifying named failures rather than treating
 arbitrary runner errors as a successful reproduction; proof now checks the JSON
 report for all five targeted failing cases. CI results remain pending.
+
+CI run [42307030923](https://github.com/aranlucas/snaphaul/actions/runs/42307030923)
+passed all 58 tests, typecheck and formatting, including the 9-second abort/fallback
+regression. Lint stopped subsequent build/browser/proof stages: new tests needed
+statement spacing and safe parsed JSON/error/session types. Corrected those test
+issues without weakening assertions. Production build/browser/proof remain pending.
+Vercel reports an account block and is excluded under the user policy.

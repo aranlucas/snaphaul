@@ -439,6 +439,7 @@ for (const count of ["broken", "-2", "1.5", "Infinity"]) {
         ],
       }),
     );
+
     const res = await POST(
       new NextRequest("http://localhost/api/generate", {
         method: "POST",
@@ -446,6 +447,7 @@ for (const count of ["broken", "-2", "1.5", "Infinity"]) {
         headers: { Cookie: `sh_session=synthetic; sh_used_synthetic=${count}` },
       }),
     );
+
     assert.equal(res.status, 200);
     assert.deepEqual(await res.json(), { listing, comps: null, remaining: 9 });
     assert.equal(res.cookies.get("sh_used_synthetic")?.value, "1");
@@ -458,18 +460,20 @@ test("stalled model is aborted and a fallback produces the listing", async () =>
   let aborted = false;
   vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => {
     calls++;
+
     if (calls === 1) {
       return new Promise((_resolve, reject) => {
         init?.signal?.addEventListener(
           "abort",
           () => {
             aborted = true;
-            reject(init.signal?.reason);
+            reject(new Error("Provider request aborted"));
           },
           { once: true },
         );
       });
     }
+
     return Promise.resolve(
       Response.json({
         choices: [
@@ -482,12 +486,14 @@ test("stalled model is aborted and a fallback produces the listing", async () =>
       }),
     );
   });
+
   const res = await POST(
     new NextRequest("http://localhost/api/generate", {
       method: "POST",
       body: JSON.stringify(DEFAULT_BODY),
     }),
   );
+
   assert.equal(aborted, true);
   assert.equal(calls, 2);
   assert.equal(res.status, 200);
@@ -507,6 +513,7 @@ test("an unsafe session cookie is replaced before setting response cookies", asy
       ],
     }),
   );
+
   const res = await POST(
     new NextRequest("http://localhost/api/generate", {
       method: "POST",
@@ -514,8 +521,10 @@ test("an unsafe session cookie is replaced before setting response cookies", asy
       headers: { Cookie: "sh_session=bad%20session" },
     }),
   );
+
   assert.equal(res.status, 200);
   const sid = res.cookies.get("sh_session")?.value;
-  assert.match(sid ?? "", /^[A-Za-z0-9_-]{1,128}$/);
+  assert.ok(sid);
+  assert.match(sid, /^[A-Za-z0-9_-]{1,128}$/);
   assert.equal(res.cookies.get(`sh_used_${sid}`)?.value, "1");
 });

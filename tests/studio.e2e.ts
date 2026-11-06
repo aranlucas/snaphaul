@@ -1,5 +1,6 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
+import { z } from "zod";
 
 const listing = {
   item_identification: "Synthetic item",
@@ -25,6 +26,7 @@ test("seller prepares, edits and copies a draft, recovers from failure, then cle
       value: {
         writeText: (text: string) => {
           window.sessionStorage.setItem("copied-text", text);
+
           return Promise.resolve();
         },
       },
@@ -32,15 +34,26 @@ test("seller prepares, edits and copies a draft, recovers from failure, then cle
   });
   await browser.route("**/api/generate", async (route) => {
     calls++;
-    const input = JSON.parse(route.request.postData ?? "{}");
+
+    const input = z
+      .object({
+        marketplace: z.string(),
+        brand: z.string(),
+        images: z.array(z.string()),
+      })
+      .parse(JSON.parse(route.request.postData ?? "{}"));
+
     expect(input.marketplace).toBe("etsy");
     expect(input.brand).toBe("Fixture Brand");
     expect(input.images).toHaveLength(1);
     expect(input.images[0]).toMatch(/^data:image\/jpeg;base64,/);
+
     if (calls === 2) {
       await route.fulfill({ status: 502, json: { error: "Generation failed, please try again." } });
+
       return;
     }
+
     await route.fulfill({ json: { listing, comps: null, remaining: calls === 1 ? 9 : 8 } });
   });
   await app.open("/app");
