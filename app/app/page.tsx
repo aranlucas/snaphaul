@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { keyedValues } from "@/lib/listing-keys";
 import { z } from "zod";
-import imageCompression from "browser-image-compression";
 import {
   MARKETPLACE_CONFIG,
   MARKETPLACES,
@@ -15,16 +14,25 @@ import {
 import {
   GenerationResponseSchema,
   MAX_PHOTOS,
-  MAX_IMAGE_BYTES,
   IMAGE_MEDIA_TYPES,
   type Listing,
   type Comps,
 } from "@/lib/listing-contract";
+import { PhotoPreparation } from "../components/photo-preparation";
 import { Brand, Footer, Icon } from "../components/studio-ui";
 
 const GenerationErrorSchema = z.object({ error: z.string().optional() });
 
 type Photo = { id: number; src: string; name: string };
+
+// A replaced draft stays restorable so regeneration never silently discards edits.
+type Draft = {
+  listing: Listing;
+  marketplace: Marketplace;
+  comps: Comps | null;
+  revision: number;
+  edited: boolean;
+};
 
 const EMPTY_DETAILS = {
   brand: "",
@@ -42,12 +50,15 @@ function fullListingText(l: Listing) {
 }
 
 export default function GeneratorPage() {
+  const preparePhoto = useContext(PhotoPreparation);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [marketplace, setMarketplace] = useState<Marketplace>("ebay");
   const [details, setDetails] = useState(EMPTY_DETAILS);
   const [listing, setListing] = useState<Listing | null>(null);
   const [listingFor, setListingFor] = useState<Marketplace>("ebay");
   const [comps, setComps] = useState<Comps | null>(null);
+  const [edited, setEdited] = useState(false);
+  const [previousDraft, setPreviousDraft] = useState<Draft | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -129,19 +140,7 @@ export default function GeneratorPage() {
 
       try {
         // oxlint-disable-next-line eslint/no-await-in-loop -- Compress sequentially to cap memory and preserve the five-photo limit.
-        const out = await imageCompression(file, {
-          maxSizeMB: 0.4,
-          maxWidthOrHeight: 1024,
-          useWebWorker: false,
-          fileType: "image/jpeg",
-        });
-
-        if (out.size > MAX_IMAGE_BYTES) {
-          throw new Error("Image could not be reduced");
-        }
-
-        // oxlint-disable-next-line eslint/no-await-in-loop -- Read each compressed photo before processing the next.
-        const src = await imageCompression.getDataUrlFromFile(out);
+        const src = await preparePhoto(file);
         added.push({ id: ++photoId.current, src, name: file.name });
       } catch {
         errors.push(`${file.name}: couldn’t read this photo. Try another image.`);
@@ -203,6 +202,8 @@ export default function GeneratorPage() {
     setMarketplace("ebay");
     setListing(null);
     setComps(null);
+    setEdited(false);
+    setPreviousDraft(null);
     setError("");
     setUploadError("");
     setCopyNotice("");
@@ -221,7 +222,6 @@ export default function GeneratorPage() {
 
     if (target && target !== marketplace) {
       setMarketplace(target);
-      changed();
     }
 
     const sourceRevision = revisionRef.current;
@@ -273,10 +273,23 @@ export default function GeneratorPage() {
       }
 
       const data = parsed.data;
+
+      // Inputs are disabled while generating, so this render's draft is the one being replaced.
+      if (listing) {
+        setPreviousDraft({
+          listing,
+          marketplace: listingFor,
+          comps,
+          revision: draftRevision,
+          edited,
+        });
+      }
+
       setListing(data.listing);
       setListingFor(mp);
       setDraftRevision(sourceRevision);
       setComps(data.comps ?? null);
+      setEdited(false);
 
       if (data.remaining !== undefined) {
         setRemaining(data.remaining);
@@ -354,9 +367,27 @@ export default function GeneratorPage() {
     }
   }
 
+  function restorePreviousDraft() {
+    if (!previousDraft || !listing || requestRef.current) {
+      return;
+    }
+
+    // Swap rather than discard, so the newer draft stays restorable too.
+    operationVersions.current.copy++;
+    setCopied("");
+    setCopyNotice("");
+    setPreviousDraft({ listing, marketplace: listingFor, comps, revision: draftRevision, edited });
+    setListing(previousDraft.listing);
+    setListingFor(previousDraft.marketplace);
+    setMarketplace(previousDraft.marketplace);
+    setComps(previousDraft.comps);
+    setDraftRevision(previousDraft.revision);
+    setEdited(previousDraft.edited);
+  }
+
   const titleLimit = MARKETPLACE_CONFIG[listingFor].titleLimit;
   const busy = loading || uploading;
-  const stale = listing && revision !== draftRevision;
+  const stale = listing && (revision !== draftRevision || marketplace !== listingFor);
 
   function copyButton(label: string, text: string) {
     return (
@@ -543,10 +574,7 @@ export default function GeneratorPage() {
                       name="marketplace"
                       value={mp}
                       checked={marketplace === mp}
-                      onChange={() => {
-                        setMarketplace(mp);
-                        changed();
-                      }}
+                      onChange={() => setMarketplace(mp)}
                     />
                     <span>{MARKETPLACE_CONFIG[mp].name}</span>
                     <span className="radio-mark" aria-hidden="true" />
@@ -617,9 +645,7 @@ export default function GeneratorPage() {
             </div>
             {!photos.length && <p className="fine">Add at least one photo to get started.</p>}
             {listing && (
-              <p className="fine">
-                A new draft replaces your edits. Copy anything you want to keep first.
-              </p>
+              <p className="fine">A new draft keeps this one on the page so you can restore it.</p>
             )}
             {error && (
               <div className="feedback feedback-error" role="alert">
@@ -711,6 +737,23 @@ export default function GeneratorPage() {
                     again to update it.
                   </p>
                 )}
+                {previousDraft && (
+                  <div className="feedback">
+                    <p>
+                      <output>
+                        {`The ${MARKETPLACE_CONFIG[previousDraft.marketplace].name} draft you had before${previousDraft.edited ? ", with your edits," : ""} is kept on this page.`}
+                      </output>
+                    </p>
+                    <button
+                      type="button"
+                      className="text-button"
+                      disabled={loading}
+                      onClick={restorePreviousDraft}
+                    >
+                      Restore previous draft
+                    </button>
+                  </div>
+                )}
                 <output className="copy-feedback" aria-live="polite">
                   {copyNotice}
                 </output>
@@ -727,7 +770,10 @@ export default function GeneratorPage() {
                     rows={2}
                     value={listing.title}
                     disabled={loading}
-                    onChange={(e) => setListing({ ...listing, title: e.target.value })}
+                    onChange={(e) => {
+                      setListing({ ...listing, title: e.target.value });
+                      setEdited(true);
+                    }}
                   />
                   <p className={`fine ${listing.title.length > titleLimit ? "limit-warning" : ""}`}>
                     {listing.title.length} / {titleLimit} characters ·{" "}
@@ -749,7 +795,10 @@ export default function GeneratorPage() {
                     rows={8}
                     value={listing.description}
                     disabled={loading}
-                    onChange={(e) => setListing({ ...listing, description: e.target.value })}
+                    onChange={(e) => {
+                      setListing({ ...listing, description: e.target.value });
+                      setEdited(true);
+                    }}
                   />
                 </div>
                 <div className="editor-section">
@@ -819,7 +868,7 @@ export default function GeneratorPage() {
                 </details>
                 <div className="rework">
                   <h3>Try another marketplace</h3>
-                  <p>Creates a new draft and replaces this one. Copy your edits first.</p>
+                  <p>Creates a new draft. You can restore this one afterward.</p>
                   <div>
                     {MARKETPLACES.filter((mp) => mp !== listingFor).map((mp) => (
                       <button
