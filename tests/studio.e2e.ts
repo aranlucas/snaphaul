@@ -81,6 +81,8 @@ test("seller prepares, edits and copies a draft, recovers from failure, then cle
   await screen.getByRole("button", "Try again", { exact: true }).tap();
   await expect(screen.getByText("8 of 10 generations left")).toBeVisible();
   await expect(screen.getByLabel("Title Editable")).toHaveValue("Blue jacket");
+  await screen.getByRole("button", "Restore previous draft").tap();
+  await expect(screen.getByLabel("Title Editable")).toHaveValue("Edited jacket title");
   expect(calls).toBe(3);
   await screen.getByRole("button", "New item").tap();
   await expect(screen.getByRole("button", "Generate my listing")).toBeDisabled();
